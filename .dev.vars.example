@@ -1,0 +1,21 @@
+GROQ_API_KEY=
+GROQ_FAST_MODEL=openai/gpt-oss-120b
+
+NVIDIA_API_KEY=
+NVIDIA_SMART_MODEL=nvidia/nemotron-3-ultra-550b-a55b
+
+NEBIUS_API_KEY=
+NEBIUS_BASE_URL=
+NEBIUS_SMART_MODEL=
+
+SMART_PROVIDER=nim
+# SMART_PROVIDER=pareto  # Analyst uses Cloudflare Unbiased Pareto (unbiased/pareto)
+
+# Cloudflare Workers AI / Pareto (server-only — never NEXT_PUBLIC_*)
+CLOUDFLARE_API_TOKEN=
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_PARETO_MODEL=unbiased/pareto
+# CLOUDFLARE_AI_TIMEOUT_MS=60000
+
+HARVYX_API_KEY=
+HARVYX_API_BASE=https://www.harvics.com

@@ -1,0 +1,35 @@
+{
+  "name": "crew",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "db:migrate:local": "wrangler d1 execute crew-db --local --file=migrations/0001_init.sql",
+    "db:migrate:remote": "wrangler d1 execute crew-db --remote --file=migrations/0001_init.sql"
+  },
+  "dependencies": {
+    "@ai-sdk/groq": "^4.0.46",
+    "@ai-sdk/openai-compatible": "^3.0.53",
+    "@ai-sdk/react": "^4.0.110",
+    "ai": "^7.0.107",
+    "next": "^16.3.5",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.135.0"
+  }
+}

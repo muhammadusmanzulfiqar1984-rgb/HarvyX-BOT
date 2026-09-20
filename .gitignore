@@ -1,0 +1,16 @@
+node_modules/
+.next/
+.next-prod/
+.open-next/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.env.example
+!.dev.vars.example
+*.log
+.DS_Store
+.qodo/
+cloudflare-env.d.ts
+next-env.d.ts
+tsconfig.tsbuildinfo
