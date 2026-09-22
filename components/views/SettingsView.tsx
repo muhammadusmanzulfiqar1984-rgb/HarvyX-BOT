@@ -22,6 +22,16 @@ function ConnectionRow({ name, connected }: { name: string; connected: boolean }
   );
 }
 
+/** Not built yet — visible in the UI now, wired up later. */
+function PlannedConnectionRow({ name }: { name: string }) {
+  return (
+    <div className="settings-row">
+      <span>{name}</span>
+      <span className="badge badge-planned">Coming soon</span>
+    </div>
+  );
+}
+
 function GoogleConnectionRow({ provider, label }: { provider: 'gmail' | 'calendar'; label: string }) {
   const [status, setStatus] = useState<ConnectorStatus | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
@@ -173,6 +183,13 @@ export function SettingsView() {
       <SettingsSection title="Connections">
         <GoogleConnectionRow provider="gmail" label="Google Gmail" />
         <GoogleConnectionRow provider="calendar" label="Google Calendar" />
+        <PlannedConnectionRow name="LinkedIn" />
+        <PlannedConnectionRow name="Slack" />
+        <PlannedConnectionRow name="Google Drive" />
+        <PlannedConnectionRow name="Notion" />
+        <PlannedConnectionRow name="Airtable" />
+        <PlannedConnectionRow name="Calendly" />
+        <PlannedConnectionRow name="Stripe" />
         <ConnectionRow name="HarvYX" connected />
         <ConnectionRow name="Cloudflare" connected />
         <ConnectionRow name="Cloudflare Pareto" connected={false} />
