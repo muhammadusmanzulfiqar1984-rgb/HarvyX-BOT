@@ -5,10 +5,13 @@ import {
   type ErrorCategory,
 } from '../observability';
 
-/** Structured result returned from Manager → specialist tools (OPS / Analyst / Social). */
+/** Nested-agent specialists reachable from the Manager via a delegate tool. */
+export type SpecialistAgentName = 'OPS' | 'Analyst' | 'Social' | 'Scrape';
+
+/** Structured result returned from Manager → specialist tools. */
 export type SpecialistResult = {
   ok: boolean;
-  agent: 'OPS' | 'Analyst' | 'Social';
+  agent: SpecialistAgentName;
   text?: string;
   error?: {
     category: ErrorCategory;
@@ -16,12 +19,12 @@ export type SpecialistResult = {
   };
 };
 
-export function specialistOk(agent: 'OPS' | 'Analyst' | 'Social', text: string): SpecialistResult {
+export function specialistOk(agent: SpecialistAgentName, text: string): SpecialistResult {
   return { ok: true, agent, text: text || '(empty specialist response)' };
 }
 
 export function specialistFail(
-  agent: 'OPS' | 'Analyst' | 'Social',
+  agent: SpecialistAgentName,
   err: unknown,
   operation: string,
   provider?: string,

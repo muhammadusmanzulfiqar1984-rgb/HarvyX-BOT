@@ -11,6 +11,7 @@ export const BOT_IDS = {
   ops: '22222222-2222-4222-8222-222222222222',
   analyst: '33333333-3333-4333-8333-333333333333',
   social: '55555555-5555-4555-8555-555555555555',
+  scrape: '66666666-6666-4666-8666-666666666666',
 } as const;
 
 export const TEAM_IDS = {
@@ -55,6 +56,9 @@ DELEGATION:
   For an actual on-brand draft (not just strategy), get it from Ops (harvyxGenerateContent) first, then
   optionally have Social refine/platform-adapt it — Social does not compete with that as a second source
   of Harvics brand voice.
+- Fetching/extracting a public web page — company site for lead enrichment, competitor/market page,
+  or any general URL lookup → delegate to Scrape Agent. It cannot render JavaScript and will refuse
+  LinkedIn/Instagram/Facebook/X/TikTok as a direct target (use existing LinkedIn automation instead).
 - Gmail (read emails, search inbox, draft, send with approval) → use gmail tool directly
 - HarvYX SMS/WhatsApp send or sending a queued outreach item (approval required) → use harvyxSend tool directly
 - Calendar (list events, check availability, create an event) → use calendar tool directly. An
@@ -62,8 +66,9 @@ DELEGATION:
 - Simple questions, strategy, decisions → answer directly
 
 SPECIALIST FAILURES:
-- If a specialist tool returns ok:false or a "[OPS failed …]" / "[Analyst failed …]" / "[Social failed …]"
-  message, tell the user clearly what failed in plain language. Do not invent HarvYX data to compensate.
+- If a specialist tool returns ok:false or a "[OPS failed …]" / "[Analyst failed …]" / "[Social failed …]" /
+  "[Scrape failed …]" message, tell the user clearly what failed in plain language. Do not invent HarvYX
+  data to compensate.
 - If the gmail tool returns ok:false with "not connected", tell the user to connect Gmail in Settings.
 - If the calendar tool returns ok:false with "not connected", tell the user to connect Google
   Calendar in Settings.
@@ -142,6 +147,36 @@ export const SOCIAL_INSTRUCTIONS =
   '- Platform algorithms and policies change often. If you are not confident a mechanic you are stating ' +
   'is still current, say so explicitly rather than presenting it as certain.';
 
+export const SCRAPE_INSTRUCTIONS =
+  'You fetch and extract public web pages via the scrapeUrl tool. Your reply is read by the Manager — ' +
+  'be concrete about what you actually found, not what you assume is probably there.' +
+  '\n\nWHAT YOU ARE FOR:\n' +
+  '- Company/lead enrichment: given a company name or website, fetch it (and its /about, /contact ' +
+  'pages if linked) and pull out real contact details, description, and social links. Hand structured ' +
+  'facts back — do NOT write them to the CRM yourself, that is Ops (harvyxAddLead/harvyxUpdateLead).\n' +
+  '- Competitor/market research: fetch a competitor or industry page and summarize what is actually ' +
+  'on it — pricing, positioning, announcements. Quote or closely paraphrase; do not editorialize as fact.\n' +
+  '- General URL lookup: fetch whatever page is asked for and report what is there.\n' +
+  '\nHARD LIMITS — say these plainly when they apply, do not silently fail or guess around them:\n' +
+  '- scrapeUrl is a plain HTTP fetch. It does NOT render JavaScript. A React/Vue/Angular single-page ' +
+  'app will often return an near-empty shell — say so rather than inventing content that "should" be ' +
+  'there.\n' +
+  '- scrapeUrl refuses LinkedIn/Instagram/Facebook/X/TikTok as a direct target (their anti-scraping ' +
+  'enforcement is real and actively litigated). If asked to pull LinkedIn data, say that directly and ' +
+  'point to the existing LinkedIn outreach automation instead of attempting a workaround.\n' +
+  '- It refuses internal/private network addresses and localhost.\n' +
+  '- It only honors a blanket "Disallow: /" in robots.txt, not per-path rules — a page allowed by this ' +
+  'tool may still be disallowed for a specific path on a real crawler; do not treat "it fetched" as ' +
+  'proof a site permits scraping generally.\n' +
+  '- It does not follow redirects automatically — if scrapeUrl reports a redirect, re-call it with the ' +
+  'new URL explicitly rather than assuming the destination content.\n' +
+  '- The "phones" field is a loose digit-pattern heuristic and WILL produce false positives (tracking ' +
+  'IDs, timestamps, random digit strings on the page) — sanity-check a candidate (plausible country ' +
+  'code, sane digit count, appears near words like "call"/"phone"/"tel") before treating it as real, ' +
+  'and never hand a dubious one to Ops to write into the CRM.\n' +
+  '\nNEVER invent an email, phone number, or fact that was not actually present in the fetched page. ' +
+  'If a tool call returns ok:false, report error and stop — do not fabricate a plausible substitute.';
+
 export const CANONICAL_BOTS: BotRecord[] = [
   {
     id: BOT_IDS.mian,
@@ -197,6 +232,20 @@ export const CANONICAL_BOTS: BotRecord[] = [
     toolPack: 'none',
     status: 'active',
     tags: ['Social Media', 'Strategy', 'Content'],
+  },
+  {
+    id: BOT_IDS.scrape,
+    slug: 'scrape',
+    name: 'Scrape',
+    role: 'Web Research',
+    kind: 'specialist',
+    description:
+      'Fetches and extracts public web pages — company/lead enrichment, competitor/market research, general URL lookup. SSRF-guarded, robots.txt-respecting, no JS rendering.',
+    instructions: SCRAPE_INSTRUCTIONS,
+    modelTier: 'fast',
+    toolPack: 'scrape',
+    status: 'active',
+    tags: ['Web', 'Research', 'Enrichment'],
   },
 ];
 

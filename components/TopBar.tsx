@@ -8,6 +8,7 @@ const AGENT_DOTS = [
   { label: 'OPS',  color: '#4A9EFF' },
   { label: 'ANALYST', color: '#9B59B6' },
   { label: 'SOCIAL', color: '#2ED9C3' },
+  { label: 'SCRAPE', color: '#E08A3C' },
 ];
 
 export function TopBar({

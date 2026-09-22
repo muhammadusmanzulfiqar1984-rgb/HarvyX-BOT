@@ -14,6 +14,7 @@
   --ops-blue:    #4A9EFF;
   --analyst-purple: #9B59B6;
   --social-teal: #2ED9C3;
+  --scrape-amber: #E08A3C;
   --success:     #6DBF8A;
   --danger:      #D9534F;
 }
@@ -515,6 +516,11 @@ html, body {
   border-left: 2px solid var(--social-teal);
 }
 
+.agent-activity.scrape {
+  background: rgba(224,138,60,0.08);
+  border-left: 2px solid var(--scrape-amber);
+}
+
 .agent-activity.is-thinking {
   box-shadow: inset 0 0 0 1px rgba(201, 162, 39, 0.08);
 }
@@ -535,6 +541,7 @@ html, body {
 .agent-activity.ops .agent-activity-name { color: var(--ops-blue); }
 .agent-activity.analyst .agent-activity-name { color: var(--analyst-purple); }
 .agent-activity.social .agent-activity-name { color: var(--social-teal); }
+.agent-activity.scrape .agent-activity-name { color: var(--scrape-amber); }
 
 .agent-activity-status {
   font-size: 10px;
@@ -555,6 +562,7 @@ html, body {
 .agent-activity.ops .agent-totem { color: var(--ops-blue); }
 .agent-activity.analyst .agent-totem { color: var(--analyst-purple); }
 .agent-activity.social .agent-totem { color: var(--social-teal); }
+.agent-activity.scrape .agent-totem { color: var(--scrape-amber); }
 
 /* Horse — gallop while thinking */
 .agent-totem.horse.is-active {
@@ -898,6 +906,17 @@ html, body {
   gap: 10px;
   align-items: flex-start;
 }
+
+.agent-card-totem {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+}
+.agent-card-totem.ops { color: var(--ops-blue); }
+.agent-card-totem.analyst { color: var(--analyst-purple); }
+.agent-card-totem.social { color: var(--social-teal); }
+.agent-card-totem.scrape { color: var(--scrape-amber); }
 
 .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 

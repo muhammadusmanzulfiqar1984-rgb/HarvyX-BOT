@@ -5,7 +5,7 @@ export type BotModelTier = 'fast' | 'reasoning' | 'code';
 export type BotKind = 'orchestrator' | 'specialist';
 
 /** Built-in tool packs resolved in code (Phase 0). New Bots pick a pack; they do not hardcode tools. */
-export type BotToolPack = 'none' | 'delegate' | 'harvyx';
+export type BotToolPack = 'none' | 'delegate' | 'harvyx' | 'scrape';
 
 export type BotStatus = 'active' | 'planned' | 'disabled';
 

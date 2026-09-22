@@ -8,6 +8,14 @@ import { isToolUIPart } from 'ai';
 import type { ManagerUIMessage } from '@/lib/agents/manager';
 import { AgentActivity } from './AgentActivity';
 
+/** Delegate-tool names that get the full specialist activity card instead of a plain tool-step line. */
+const SPECIALIST_TOOL_NAMES = new Set([
+  'delegateToOps',
+  'delegateToAnalyst',
+  'delegateToSocial',
+  'delegateToScrape',
+]);
+
 function toolLabel(toolName: string) {
   return `⟳ Consulting ${toolName === 'delegateToOps' ? 'OPS' : toolName} agent...`;
 }
@@ -67,7 +75,7 @@ export function MessageList({
                 }
                 if (isToolUIPart(part)) {
                   const toolName = part.type.slice('tool-'.length);
-                  if (toolName === 'delegateToOps' || toolName === 'delegateToAnalyst' || toolName === 'delegateToSocial') {
+                  if (SPECIALIST_TOOL_NAMES.has(toolName)) {
                     return <AgentActivity key={i} toolType={part.type} part={part} />;
                   }
                   const done = part.state === 'output-available' || part.state === 'output-error';

@@ -10,7 +10,7 @@ type ToolPart = {
 
 const AGENT_META: Record<
   string,
-  { label: string; cls: 'ops' | 'analyst' | 'social'; thinking: string }
+  { label: string; cls: 'ops' | 'analyst' | 'social' | 'scrape'; thinking: string }
 > = {
   delegateToOps: {
     label: 'OPS AGENT',
@@ -26,6 +26,11 @@ const AGENT_META: Record<
     label: 'SOCIAL AGENT',
     cls: 'social',
     thinking: 'Lion on the platform — strategizing…',
+  },
+  delegateToScrape: {
+    label: 'SCRAPE AGENT',
+    cls: 'scrape',
+    thinking: 'Horse on the open web — fetching…',
   },
 };
 

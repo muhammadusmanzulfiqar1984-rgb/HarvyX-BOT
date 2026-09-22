@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { NavSection } from '../nav';
 import type { BotCatalogItem } from '@/lib/bots/types';
+import { HorseRunningIcon, LionRoaringIcon } from '../AgentTotems';
 
 const FALLBACK: BotCatalogItem[] = [
   {
@@ -43,7 +44,51 @@ const FALLBACK: BotCatalogItem[] = [
     modelTier: 'reasoning',
     toolPack: 'none',
   },
+  {
+    id: 'social',
+    slug: 'social',
+    name: 'Social',
+    role: 'Social Media',
+    kind: 'specialist',
+    description:
+      'Platform-accurate social media strategy and critique across LinkedIn, Instagram, X, Facebook, TikTok, and WhatsApp — real mechanics, not generic advice.',
+    status: 'active',
+    tags: ['Social Media', 'Strategy', 'Content'],
+    modelTier: 'reasoning',
+    toolPack: 'none',
+  },
+  {
+    id: 'scrape',
+    slug: 'scrape',
+    name: 'Scrape',
+    role: 'Web Research',
+    kind: 'specialist',
+    description:
+      'Fetches and extracts public web pages — company/lead enrichment, competitor/market research, general URL lookup. SSRF-guarded, robots.txt-respecting, no JS rendering.',
+    status: 'active',
+    tags: ['Web', 'Research', 'Enrichment'],
+    modelTier: 'fast',
+    toolPack: 'scrape',
+  },
 ];
+
+function TotemForSlug({ slug }: { slug: string }) {
+  if (slug === 'ops' || slug === 'scrape') {
+    return (
+      <span className={`agent-card-totem ${slug === 'ops' ? 'ops' : 'scrape'}`} aria-hidden>
+        <HorseRunningIcon active />
+      </span>
+    );
+  }
+  if (slug === 'analyst' || slug === 'social') {
+    return (
+      <span className={`agent-card-totem ${slug === 'analyst' ? 'analyst' : 'social'}`} aria-hidden>
+        <LionRoaringIcon active />
+      </span>
+    );
+  }
+  return null;
+}
 
 export function AgentsView({ onNavigate }: { onNavigate: (section: NavSection) => void }) {
   const [agents, setAgents] = useState<BotCatalogItem[]>(FALLBACK);
@@ -70,12 +115,16 @@ export function AgentsView({ onNavigate }: { onNavigate: (section: NavSection) =
     <div className="view-shell">
       <div className="view-header">
         <h1>Agents</h1>
-        <p>First-class Bots from the registry (same OPS + Analyst intelligence as before).</p>
+        <p>
+          OPS &amp; Scrape = running horse · Analyst &amp; Social = roaring lion. Full thinking motion
+          appears in Chat when they work.
+        </p>
       </div>
       <div className="agent-grid">
         {agents.map((a) => (
           <div key={a.slug} className="card agent-card">
             <div className="card-eyebrow">{a.role}</div>
+            <TotemForSlug slug={a.slug} />
             <h3>{a.name}</h3>
             <p>{a.description}</p>
             <div className="tag-row">
