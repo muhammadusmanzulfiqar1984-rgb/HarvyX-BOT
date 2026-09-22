@@ -3,10 +3,11 @@ import { resolveModel } from '../models/router';
 import { getBotDefinition } from '../bots';
 import { delegateToOpsTool } from '../tools/delegate-to-ops';
 import { delegateToAnalystTool } from '../tools/delegate-to-analyst';
+import { delegateToGmailTool, type GmailToolEnv } from '../tools/delegate-to-gmail';
 import type { OpsAgentEnv } from './ops-agent';
 import type { SmartModelEnv } from '../models/smart';
 
-export type ManagerEnv = OpsAgentEnv & SmartModelEnv;
+export type ManagerEnv = OpsAgentEnv & SmartModelEnv & GmailToolEnv;
 
 /** @deprecated Prefer getBotDefinition('mian').instructions — kept for import stability. */
 export const MIAN_INSTRUCTIONS = getBotDefinition('mian').instructions;
@@ -20,6 +21,7 @@ export function createManagerAgent(env: ManagerEnv) {
     tools: {
       delegateToOps: delegateToOpsTool(env),
       delegateToAnalyst: delegateToAnalystTool(env),
+      gmail: delegateToGmailTool(env),
     },
   });
 }

@@ -30,10 +30,11 @@ export function MessageInput({
       <textarea
         rows={1}
         value={value}
-        placeholder="Ask anything..."
+        placeholder="Ask MIAN anything..."
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
       />
+      <div className="input-model-pill">GROQ</div>
       <button className="send-btn" onClick={submit} disabled={disabled || !value.trim()}>
         Send
       </button>

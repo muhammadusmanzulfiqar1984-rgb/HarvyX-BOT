@@ -19,3 +19,10 @@ CLOUDFLARE_PARETO_MODEL=unbiased/pareto
 
 HARVYX_API_KEY=
 HARVYX_API_BASE=https://www.harvics.com
+
+# Gmail OAuth connector (server-side only — never NEXT_PUBLIC_*)
+# Create a Google Cloud OAuth 2.0 Web Application client.
+# Local dev redirect URI: http://localhost:3000/api/connectors/gmail/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+# GOOGLE_REDIRECT_URI=   # Optional override; auto-detected from request URL if omitted

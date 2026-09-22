@@ -29,12 +29,12 @@ export function Sidebar({
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="sidebar-header">
-        <span className="sidebar-title">
-          HARVY<span className="sidebar-title-accent">X</span> BOT
-        </span>
-        <button className="hamburger-btn" onClick={onToggle} aria-label="Toggle sidebar">
-          ✕
-        </button>
+        <div className="sidebar-wordmark">
+          <span className="sidebar-wordmark-harvyx">HARVYX</span>
+          <span className="sidebar-wordmark-bot">BOT</span>
+        </div>
+        <div className="sidebar-subtitle">Autonomous Intelligence System</div>
+        <button className="hamburger-btn" onClick={onToggle} aria-label="Toggle sidebar">✕</button>
       </div>
 
       <nav className="nav-list">
@@ -44,7 +44,7 @@ export function Sidebar({
             className={`nav-item ${activeSection === id ? 'active' : ''}`}
             onClick={() => onNavigate(id)}
           >
-            <Icon size={17} />
+            <Icon size={15} />
             <span>{label}</span>
           </button>
         ))}
@@ -53,7 +53,7 @@ export function Sidebar({
       <div className="sidebar-divider" />
 
       <button className="new-chat-btn" onClick={onNewChat}>
-        + New chat
+        + Initiate Session
       </button>
 
       <div className="conversation-list">
@@ -64,9 +64,20 @@ export function Sidebar({
             className={`conversation-item ${activeSection === 'chat' && c.id === activeId ? 'active' : ''}`}
             onClick={() => onSelect(c.id)}
           >
-            {c.title}
+            <div className="conversation-item-title">{c.title}</div>
           </div>
         ))}
+      </div>
+
+      <div className="sidebar-user">
+        <div className="sidebar-avatar">MU</div>
+        <div className="sidebar-user-info">
+          <div className="sidebar-user-name">Mian Muhammad Usman</div>
+          <div className="sidebar-user-status">
+            <span className="status-dot-online" />
+            <span className="sidebar-user-status-label">Online</span>
+          </div>
+        </div>
       </div>
     </aside>
   );

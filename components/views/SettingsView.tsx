@@ -1,6 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+
+interface ConnectorStatus {
+  provider: string;
+  connected: boolean;
+  accountEmail?: string;
+  scopes?: string[];
+  connectedAt?: string;
+}
 
 function ConnectionRow({ name, connected }: { name: string; connected: boolean }) {
   return (
@@ -10,6 +18,61 @@ function ConnectionRow({ name, connected }: { name: string; connected: boolean }
         <span className="status-dot" aria-hidden />
         {connected ? 'Connected' : 'Not connected'}
       </span>
+    </div>
+  );
+}
+
+function GmailConnectionRow() {
+  const [status, setStatus] = useState<ConnectorStatus | null>(null);
+  const [disconnecting, setDisconnecting] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/connectors/gmail/status')
+      .then((r) => r.json())
+      .then((data) => setStatus(data as ConnectorStatus))
+      .catch(() => setStatus({ provider: 'gmail', connected: false }));
+  }, []);
+
+  async function handleDisconnect() {
+    setDisconnecting(true);
+    try {
+      await fetch('/api/connectors/gmail/disconnect', { method: 'POST' });
+      setStatus({ provider: 'gmail', connected: false });
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
+  const connected = status?.connected ?? false;
+
+  return (
+    <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+      <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>Google Gmail</span>
+        <span className={`status-pill ${connected ? 'status-connected' : 'status-disconnected'}`}>
+          <span className="status-dot" aria-hidden />
+          {status === null ? 'Checking…' : connected ? 'Connected' : 'Not connected'}
+        </span>
+      </div>
+      {connected && status?.accountEmail && (
+        <span className="settings-value" style={{ fontSize: '0.75rem' }}>{status.accountEmail}</span>
+      )}
+      {connected && status?.scopes && status.scopes.length > 0 && (
+        <span className="settings-value" style={{ fontSize: '0.7rem', opacity: 0.6 }}>
+          {status.scopes.map((s) => s.split('/').pop()).join(' · ')}
+        </span>
+      )}
+      <div style={{ marginTop: '4px' }}>
+        {connected ? (
+          <button className="btn-secondary" onClick={handleDisconnect} disabled={disconnecting}>
+            {disconnecting ? 'Disconnecting…' : 'Disconnect'}
+          </button>
+        ) : (
+          <a href="/api/connectors/gmail/connect">
+            <button className="btn-secondary">Connect Gmail</button>
+          </a>
+        )}
+      </div>
     </div>
   );
 }
@@ -108,6 +171,7 @@ export function SettingsView() {
       </SettingsSection>
 
       <SettingsSection title="Connections">
+        <GmailConnectionRow />
         <ConnectionRow name="HarvYX" connected />
         <ConnectionRow name="Cloudflare" connected />
         <ConnectionRow name="Cloudflare Pareto" connected={false} />

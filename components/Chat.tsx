@@ -26,16 +26,15 @@ export function Chat({ conversationId }: { conversationId: string }) {
             {error?.message?.slice(0, 200) ||
               'Something went wrong generating a reply. You can try sending again.'}
           </span>
-          <button
-            type="button"
-            className="chat-error-dismiss"
-            onClick={() => clearError?.()}
-          >
+          <button type="button" className="chat-error-dismiss" onClick={() => clearError?.()}>
             Dismiss
           </button>
         </div>
       )}
-      <MessageList messages={messages} />
+      <MessageList
+        messages={messages}
+        onChipSend={(text) => sendMessage({ text })}
+      />
       <MessageInput disabled={busy} onSend={(text) => sendMessage({ text })} />
     </div>
   );
