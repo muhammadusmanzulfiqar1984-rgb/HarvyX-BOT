@@ -146,11 +146,11 @@ export async function ensureBotRegistrySeeded(db: D1Database): Promise<boolean> 
         ),
     );
 
-    const members: { botId: string; memberRole: string; sort: number }[] = [
-      { botId: CANONICAL_BOTS[0].id, memberRole: 'orchestrator', sort: 0 },
-      { botId: CANONICAL_BOTS[1].id, memberRole: 'member', sort: 1 },
-      { botId: CANONICAL_BOTS[2].id, memberRole: 'member', sort: 2 },
-    ];
+    // First canonical bot is the orchestrator; every other one is a member.
+    // Generalized over the full list so new specialists don't need a hardcoded index here.
+    const members: { botId: string; memberRole: string; sort: number }[] = CANONICAL_BOTS.map(
+      (bot, i) => ({ botId: bot.id, memberRole: i === 0 ? 'orchestrator' : 'member', sort: i }),
+    );
 
     for (const m of members) {
       statements.push(

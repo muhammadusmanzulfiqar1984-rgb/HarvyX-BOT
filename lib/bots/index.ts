@@ -14,6 +14,7 @@ export {
   MIAN_INSTRUCTIONS,
   OPS_INSTRUCTIONS,
   PLANNED_BOTS,
+  SOCIAL_INSTRUCTIONS,
   TEAM_IDS,
   getCanonicalBot,
 } from './definitions';

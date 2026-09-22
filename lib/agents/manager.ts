@@ -3,6 +3,7 @@ import { resolveModel } from '../models/router';
 import { getBotDefinition } from '../bots';
 import { delegateToOpsTool } from '../tools/delegate-to-ops';
 import { delegateToAnalystTool } from '../tools/delegate-to-analyst';
+import { delegateToSocialTool } from '../tools/delegate-to-social';
 import { delegateToGmailTool, type GmailToolEnv } from '../tools/delegate-to-gmail';
 import { delegateToHarvyxSendTool } from '../tools/delegate-to-harvyx-send';
 import { delegateToCalendarTool, type CalendarToolEnv } from '../tools/delegate-to-calendar';
@@ -23,6 +24,7 @@ export function createManagerAgent(env: ManagerEnv) {
     tools: {
       delegateToOps: delegateToOpsTool(env),
       delegateToAnalyst: delegateToAnalystTool(env),
+      delegateToSocial: delegateToSocialTool(env),
       gmail: delegateToGmailTool(env),
       harvyxSend: delegateToHarvyxSendTool(env),
       calendar: delegateToCalendarTool(env),

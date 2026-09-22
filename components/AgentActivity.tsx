@@ -1,3 +1,5 @@
+import { HorseRunningIcon, LionRoaringIcon } from './AgentTotems';
+
 type ToolPart = {
   type: string;
   state: string;
@@ -6,9 +8,25 @@ type ToolPart = {
   output?: unknown;
 };
 
-const AGENT_META: Record<string, { label: string; cls: string }> = {
-  delegateToOps:     { label: 'OPS AGENT',     cls: 'ops' },
-  delegateToAnalyst: { label: 'ANALYST AGENT',  cls: 'analyst' },
+const AGENT_META: Record<
+  string,
+  { label: string; cls: 'ops' | 'analyst' | 'social'; thinking: string }
+> = {
+  delegateToOps: {
+    label: 'OPS AGENT',
+    cls: 'ops',
+    thinking: 'Horse on the corridor — fetching HarvYX…',
+  },
+  delegateToAnalyst: {
+    label: 'ANALYST AGENT',
+    cls: 'analyst',
+    thinking: 'Lion in the den — reasoning…',
+  },
+  delegateToSocial: {
+    label: 'SOCIAL AGENT',
+    cls: 'social',
+    thinking: 'Lion on the platform — strategizing…',
+  },
 };
 
 function taskText(input: unknown): string | null {
@@ -29,24 +47,39 @@ function failureHint(part: ToolPart): string | null {
   return null;
 }
 
+/**
+ * Specialist activity card — Claude-style “thinking” motion via animal totems:
+ * OPS = running horse, Analyst = roaring lion.
+ */
 export function AgentActivity({ toolType, part }: { toolType: string; part: ToolPart }) {
   const toolName = toolType.slice('tool-'.length);
-  const meta = AGENT_META[toolName] ?? { label: toolName.toUpperCase(), cls: 'ops' };
+  const meta = AGENT_META[toolName] ?? {
+    label: toolName.toUpperCase(),
+    cls: 'ops' as const,
+    thinking: 'Working…',
+  };
   const task = taskText(part.input);
   const hint = failureHint(part);
   const done = part.state === 'output-available';
   const errored = part.state === 'output-error' || Boolean(hint?.includes('failed'));
+  const working = !done && !errored;
 
-  const status = errored ? 'Error' : done ? 'Complete' : 'Working';
-  const dotClass = `agent-dot ${errored ? 'error' : done ? 'done' : 'working'}`;
+  const status = errored ? 'Error' : done ? 'Complete' : 'Thinking';
 
   return (
-    <div className={`agent-activity ${meta.cls}`}>
+    <div className={`agent-activity ${meta.cls}${working ? ' is-thinking' : ''}`}>
       <div className="agent-activity-header">
-        <span className={dotClass} aria-hidden />
+        <span className="agent-totem-wrap" aria-hidden>
+          {meta.cls === 'analyst' || meta.cls === 'social' ? (
+            <LionRoaringIcon active={working} />
+          ) : (
+            <HorseRunningIcon active={working} />
+          )}
+        </span>
         <span className="agent-activity-name">{meta.label}</span>
         <span className="agent-activity-status">{status}</span>
       </div>
+      {working && <div className="agent-thinking-line">{meta.thinking}</div>}
       {task && <div className="agent-activity-task">{task}</div>}
       {errored && hint && <div className="agent-activity-error">{hint}</div>}
     </div>

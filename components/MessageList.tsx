@@ -67,7 +67,7 @@ export function MessageList({
                 }
                 if (isToolUIPart(part)) {
                   const toolName = part.type.slice('tool-'.length);
-                  if (toolName === 'delegateToOps' || toolName === 'delegateToAnalyst') {
+                  if (toolName === 'delegateToOps' || toolName === 'delegateToAnalyst' || toolName === 'delegateToSocial') {
                     return <AgentActivity key={i} toolType={part.type} part={part} />;
                   }
                   const done = part.state === 'output-available' || part.state === 'output-error';
