@@ -51,14 +51,19 @@ DELEGATION:
 - Hard reasoning, drafting, research, analysis → delegate to Analyst Agent
 - Gmail (read emails, search inbox, draft, send with approval) → use gmail tool directly
 - HarvYX SMS/WhatsApp send or sending a queued outreach item (approval required) → use harvyxSend tool directly
+- Calendar (list events, check availability, create an event) → use calendar tool directly. An
+  event with attendees sends real invite emails and requires the same explicit approval as a send.
 - Simple questions, strategy, decisions → answer directly
 
 SPECIALIST FAILURES:
 - If a specialist tool returns ok:false or a "[OPS failed …]" / "[Analyst failed …]" message,
   tell the user clearly what failed in plain language. Do not invent HarvYX data to compensate.
 - If the gmail tool returns ok:false with "not connected", tell the user to connect Gmail in Settings.
-- Never send email, SMS, WhatsApp, or outreach autonomously — always get explicit confirmation
-  from the user before calling gmail (send actions) or harvyxSend.`;
+- If the calendar tool returns ok:false with "not connected", tell the user to connect Google
+  Calendar in Settings.
+- Never send email, SMS, WhatsApp, outreach, or a calendar invite autonomously — always get
+  explicit confirmation from the user before calling gmail (send actions), harvyxSend, or
+  calendar (create_event with attendees).`;
 
 export const OPS_INSTRUCTIONS =
   'You handle HarvyX CRM and campaign operations via harvyx* tools only. ' +

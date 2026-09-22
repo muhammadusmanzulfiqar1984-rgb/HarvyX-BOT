@@ -5,10 +5,11 @@ import { delegateToOpsTool } from '../tools/delegate-to-ops';
 import { delegateToAnalystTool } from '../tools/delegate-to-analyst';
 import { delegateToGmailTool, type GmailToolEnv } from '../tools/delegate-to-gmail';
 import { delegateToHarvyxSendTool } from '../tools/delegate-to-harvyx-send';
+import { delegateToCalendarTool, type CalendarToolEnv } from '../tools/delegate-to-calendar';
 import type { OpsAgentEnv } from './ops-agent';
 import type { SmartModelEnv } from '../models/smart';
 
-export type ManagerEnv = OpsAgentEnv & SmartModelEnv & GmailToolEnv;
+export type ManagerEnv = OpsAgentEnv & SmartModelEnv & GmailToolEnv & CalendarToolEnv;
 
 /** @deprecated Prefer getBotDefinition('mian').instructions — kept for import stability. */
 export const MIAN_INSTRUCTIONS = getBotDefinition('mian').instructions;
@@ -24,6 +25,7 @@ export function createManagerAgent(env: ManagerEnv) {
       delegateToAnalyst: delegateToAnalystTool(env),
       gmail: delegateToGmailTool(env),
       harvyxSend: delegateToHarvyxSendTool(env),
+      calendar: delegateToCalendarTool(env),
     },
   });
 }

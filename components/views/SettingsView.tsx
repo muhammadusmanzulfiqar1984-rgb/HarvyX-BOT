@@ -22,22 +22,22 @@ function ConnectionRow({ name, connected }: { name: string; connected: boolean }
   );
 }
 
-function GmailConnectionRow() {
+function GoogleConnectionRow({ provider, label }: { provider: 'gmail' | 'calendar'; label: string }) {
   const [status, setStatus] = useState<ConnectorStatus | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
 
   useEffect(() => {
-    fetch('/api/connectors/gmail/status')
+    fetch(`/api/connectors/${provider}/status`)
       .then((r) => r.json())
       .then((data) => setStatus(data as ConnectorStatus))
-      .catch(() => setStatus({ provider: 'gmail', connected: false }));
-  }, []);
+      .catch(() => setStatus({ provider, connected: false }));
+  }, [provider]);
 
   async function handleDisconnect() {
     setDisconnecting(true);
     try {
-      await fetch('/api/connectors/gmail/disconnect', { method: 'POST' });
-      setStatus({ provider: 'gmail', connected: false });
+      await fetch(`/api/connectors/${provider}/disconnect`, { method: 'POST' });
+      setStatus({ provider, connected: false });
     } finally {
       setDisconnecting(false);
     }
@@ -48,7 +48,7 @@ function GmailConnectionRow() {
   return (
     <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
       <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span>Google Gmail</span>
+        <span>{label}</span>
         <span className={`status-pill ${connected ? 'status-connected' : 'status-disconnected'}`}>
           <span className="status-dot" aria-hidden />
           {status === null ? 'Checking…' : connected ? 'Connected' : 'Not connected'}
@@ -68,8 +68,8 @@ function GmailConnectionRow() {
             {disconnecting ? 'Disconnecting…' : 'Disconnect'}
           </button>
         ) : (
-          <a href="/api/connectors/gmail/connect">
-            <button className="btn-secondary">Connect Gmail</button>
+          <a href={`/api/connectors/${provider}/connect`}>
+            <button className="btn-secondary">Connect {label}</button>
           </a>
         )}
       </div>
@@ -171,7 +171,8 @@ export function SettingsView() {
       </SettingsSection>
 
       <SettingsSection title="Connections">
-        <GmailConnectionRow />
+        <GoogleConnectionRow provider="gmail" label="Google Gmail" />
+        <GoogleConnectionRow provider="calendar" label="Google Calendar" />
         <ConnectionRow name="HarvYX" connected />
         <ConnectionRow name="Cloudflare" connected />
         <ConnectionRow name="Cloudflare Pareto" connected={false} />

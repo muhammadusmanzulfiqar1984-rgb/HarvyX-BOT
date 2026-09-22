@@ -30,12 +30,17 @@ export function getRedirectUri(env: GmailEnv, requestUrl?: string): string {
 }
 
 /** Build the Google OAuth authorization URL. */
-export function buildAuthUrl(env: GmailEnv, state: string, redirectUri: string): string {
+export function buildAuthUrl(
+  env: GmailEnv,
+  state: string,
+  redirectUri: string,
+  scopes: string[] = GMAIL_SCOPES,
+): string {
   const params = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
     response_type: 'code',
-    scope: GMAIL_SCOPES.join(' '),
+    scope: scopes.join(' '),
     access_type: 'offline',
     prompt: 'consent',
     state,
