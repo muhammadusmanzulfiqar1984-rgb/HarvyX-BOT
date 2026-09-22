@@ -1,0 +1,18 @@
+{
+  "name": "crew-code-mcp",
+  "version": "1.0.0",
+  "description": "Read-only MCP server exposing this repo (crew / HarvyXBOT) to any MCP-compatible IDE or client — list files, read files, search code. No write tools.",
+  "type": "module",
+  "bin": {
+    "crew-code-mcp": "./server.js"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
