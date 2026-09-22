@@ -18,6 +18,11 @@ import {
   slimCampaignStart,
   slimDiscover,
   slimEnrich,
+  slimGenerate,
+  slimLibrarySearch,
+  slimOutreachCreate,
+  slimOutreachList,
+  slimUnifiedSearch,
 } from './normalize';
 
 export function harvyxTools(env: HarvyxEnv) {
@@ -284,6 +289,119 @@ export function harvyxTools(env: HarvyxEnv) {
           return slimCampaignCreate(data);
         } catch (err) {
           return toolErrorResult(err, 'POST /campaigns');
+        }
+      },
+    }),
+
+    harvyxGenerateContent: tool({
+      description:
+        "Draft on-brand content for Harvics Global using HarvYX's content generator " +
+        '(cold email, LinkedIn post/DM/connect note, social post, WhatsApp, SMS). ' +
+        'Draft only — never sends or posts anything.',
+      inputSchema: z.object({
+        type: z.enum(['email', 'linkedin_post', 'linkedin_dm', 'linkedin_connect', 'social_post', 'whatsapp', 'sms']),
+        topic: z.string().max(500).optional().describe('Angle/offer/topic for the content'),
+        tone: z.string().max(100).optional(),
+        notes: z.string().max(1000).optional().describe('Extra instructions'),
+        lead: z
+          .object({
+            contactName: z.string().max(200).optional(),
+            title: z.string().max(200).optional(),
+            company: z.string().max(200).optional(),
+            city: z.string().max(100).optional(),
+            country: z.string().max(100).optional(),
+            segment: z.string().max(100).optional(),
+            website: z.string().max(500).optional(),
+          })
+          .optional()
+          .describe('Recipient context — only pass real known lead fields, never invent them'),
+      }),
+      execute: async (input, { abortSignal }) => {
+        try {
+          const data = await harvyxRequest(env, '/generate', {
+            method: 'POST',
+            body: JSON.stringify(input),
+            abortSignal,
+          });
+          return slimGenerate(data);
+        } catch (err) {
+          return toolErrorResult(err, 'POST /generate');
+        }
+      },
+    }),
+
+    harvyxUnifiedSearch: tool({
+      description:
+        'Unified search across the HarvYX CRM pipeline, the trade-fair/source library, and live discovery in one call. ' +
+        'Broader than harvyxSearchLeads (which is CRM-only).',
+      inputSchema: z.object({
+        q: z.string().min(1).max(200),
+        includeLive: z.boolean().optional().describe('Include live web discovery results (default true, slower)'),
+      }),
+      execute: async ({ q, includeLive }, { abortSignal }) => {
+        try {
+          const p = new URLSearchParams({ q: q.trim() });
+          if (includeLive === false) p.set('live', '0');
+          const data = await harvyxRequest(env, `/search?${p}`, { abortSignal });
+          return slimUnifiedSearch(data);
+        } catch (err) {
+          return toolErrorResult(err, '/search');
+        }
+      },
+    }),
+
+    harvyxLibrarySearch: tool({
+      description: 'Search the HarvYX trade-fair/event and source catalog library — not CRM leads.',
+      inputSchema: z.object({
+        q: z.string().max(200).optional().describe('Free-text filter; empty returns the full catalog'),
+      }),
+      execute: async ({ q }, { abortSignal }) => {
+        try {
+          const p = new URLSearchParams();
+          if (q?.trim()) p.set('q', q.trim());
+          const data = await harvyxRequest(env, `/library/search?${p}`, { abortSignal });
+          return slimLibrarySearch(data);
+        } catch (err) {
+          return toolErrorResult(err, '/library/search');
+        }
+      },
+    }),
+
+    harvyxListOutreach: tool({
+      description:
+        'List queued/sent outreach items — a lightweight outreach tracker, separate from LinkedIn campaigns.',
+      inputSchema: z.object({}),
+      execute: async (_input, { abortSignal }) => {
+        try {
+          const data = await harvyxRequest(env, '/outreach', { abortSignal });
+          return slimOutreachList(data);
+        } catch (err) {
+          return toolErrorResult(err, '/outreach');
+        }
+      },
+    }),
+
+    harvyxCreateOutreachDraft: tool({
+      description:
+        'Create a draft outreach item — queued, NOT sent. ' +
+        'Sending it later requires the Manager\'s harvyxSend tool with explicit user approval.',
+      inputSchema: z.object({
+        channel: z.string().max(50).describe('e.g. linkedin, email, sms, whatsapp, research'),
+        target: z.string().max(300).optional(),
+        message: z.string().max(2000).optional(),
+        linkedin: z.string().max(500).optional(),
+        leadId: z.string().max(120).optional(),
+      }),
+      execute: async (input, { abortSignal }) => {
+        try {
+          const data = await harvyxRequest(env, '/outreach', {
+            method: 'POST',
+            body: JSON.stringify(input),
+            abortSignal,
+          });
+          return slimOutreachCreate(data);
+        } catch (err) {
+          return toolErrorResult(err, 'POST /outreach');
         }
       },
     }),

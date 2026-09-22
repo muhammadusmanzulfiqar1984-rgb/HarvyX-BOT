@@ -4,6 +4,7 @@ import { getBotDefinition } from '../bots';
 import { delegateToOpsTool } from '../tools/delegate-to-ops';
 import { delegateToAnalystTool } from '../tools/delegate-to-analyst';
 import { delegateToGmailTool, type GmailToolEnv } from '../tools/delegate-to-gmail';
+import { delegateToHarvyxSendTool } from '../tools/delegate-to-harvyx-send';
 import type { OpsAgentEnv } from './ops-agent';
 import type { SmartModelEnv } from '../models/smart';
 
@@ -22,6 +23,7 @@ export function createManagerAgent(env: ManagerEnv) {
       delegateToOps: delegateToOpsTool(env),
       delegateToAnalyst: delegateToAnalystTool(env),
       gmail: delegateToGmailTool(env),
+      harvyxSend: delegateToHarvyxSendTool(env),
     },
   });
 }

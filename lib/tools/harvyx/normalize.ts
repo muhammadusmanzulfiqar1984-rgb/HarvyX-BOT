@@ -150,6 +150,98 @@ export function slimDiscover(body: unknown, limit: number): Record<string, unkno
   };
 }
 
+export function slimGenerate(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== 'object') return { ok: false, data: body };
+  const o = body as Record<string, unknown>;
+  if (typeof o.error === 'string') return { ok: false, error: o.error };
+  return {
+    ok: true,
+    type: o.type,
+    engine: o.engine,
+    subject: o.subject || undefined,
+    content: o.content,
+    note: 'Draft only — nothing was sent.',
+  };
+}
+
+/** Response shape: { query, bank: { total, groups: [{sourceFile,label,count,leads}] }, library: [...], live: [...] } */
+export function slimUnifiedSearch(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== 'object') return { ok: true, groups: [], library: [], live: [] };
+  const o = body as Record<string, unknown>;
+  const bank = o.bank as
+    | { total?: number; groups?: Record<string, unknown>[]; distinctSources?: number }
+    | undefined;
+  const groups = Array.isArray(bank?.groups)
+    ? bank!.groups!.slice(0, 5).map((g) => ({
+        sourceFile: g.sourceFile,
+        label: g.label,
+        count: g.count,
+        leads: Array.isArray(g.leads)
+          ? (g.leads as Record<string, unknown>[]).slice(0, 5).map((l) => slimLead(l))
+          : [],
+      }))
+    : [];
+  const library = Array.isArray(o.library) ? (o.library as unknown[]).slice(0, 8) : [];
+  const live = Array.isArray(o.live)
+    ? (o.live as Record<string, unknown>[]).slice(0, 8).map((l) => slimLead(l))
+    : [];
+  return {
+    ok: true,
+    query: o.query,
+    pipelineTotal: bank?.total ?? 0,
+    distinctSources: bank?.distinctSources ?? 0,
+    groups,
+    library,
+    live,
+    note:
+      'groups = existing CRM pipeline leads (grouped by import source). ' +
+      'live = NOT saved yet — use harvyxAddLead to save one.',
+  };
+}
+
+export function slimLibrarySearch(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== 'object') return { ok: true, items: [], count: 0 };
+  const o = body as Record<string, unknown>;
+  const items = Array.isArray(o.items) ? (o.items as unknown[]).slice(0, 20) : [];
+  return {
+    ok: true,
+    query: o.query,
+    count: typeof o.count === 'number' ? o.count : items.length,
+    items,
+    sourceCatalogSize: o.sourceCatalogSize,
+  };
+}
+
+export function slimOutreachList(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== 'object') return { ok: true, items: [] };
+  const o = body as Record<string, unknown>;
+  const rawItems = Array.isArray(o.items) ? (o.items as Record<string, unknown>[]) : [];
+  const items = rawItems.slice(0, 25).map((it) => ({
+    id: it.id,
+    status: it.status,
+    type: it.type,
+    channel: it.channel,
+    target: it.target,
+    message: typeof it.message === 'string' ? it.message.slice(0, 300) : it.message,
+    createdAt: it.createdAt,
+    sentAt: it.sentAt,
+  }));
+  return { ok: true, items, total: rawItems.length };
+}
+
+export function slimOutreachCreate(body: unknown): Record<string, unknown> {
+  if (!body || typeof body !== 'object') return { ok: false, data: body };
+  const o = body as Record<string, unknown>;
+  const item = o.item as Record<string, unknown> | undefined;
+  return {
+    ok: Boolean(o.ok),
+    item: item
+      ? { id: item.id, status: item.status, type: item.type, channel: item.channel, target: item.target }
+      : undefined,
+    note: 'Draft created — NOT sent. Sending requires explicit user approval via the Manager.',
+  };
+}
+
 export function slimEnrich(body: unknown): Record<string, unknown> {
   if (!body || typeof body !== 'object') return { ok: false, data: body };
   const o = body as Record<string, unknown>;
