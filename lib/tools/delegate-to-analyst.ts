@@ -7,7 +7,8 @@ import {
   specialistOk,
 } from '../agents/specialist-result';
 import type { SmartModelEnv } from '../models/smart';
-import { logSafe } from '../observability';
+import { resolveSmartProviderLogId } from '../models/router';
+import { requireRunnableBot, logBotExecution } from '../bots/runtime';
 
 export function delegateToAnalystTool(env: SmartModelEnv) {
   return tool({
@@ -18,28 +19,27 @@ export function delegateToAnalystTool(env: SmartModelEnv) {
     }),
     execute: async ({ task }, { abortSignal }) => {
       const started = Date.now();
-      const provider =
-        env.SMART_PROVIDER === 'nebius'
-          ? 'nebius'
-          : env.SMART_PROVIDER === 'pareto' ||
-              env.SMART_PROVIDER === 'cloudflare-pareto' ||
-              env.SMART_PROVIDER === 'cloudflare'
-            ? 'cloudflare-pareto'
-            : 'nvidia';
+      const bot = requireRunnableBot('analyst');
+      const provider = resolveSmartProviderLogId(env);
+      logBotExecution('bot_execute_start', bot, { operation: 'delegate', provider });
       try {
         const analystAgent = createAnalystAgent(env);
         const result = await analystAgent.generate({ prompt: task, abortSignal });
-        logSafe('specialist_ok', {
-          agent: 'Analyst',
+        logBotExecution('bot_execute_ok', bot, {
           operation: 'generate',
           provider,
           elapsedMs: Date.now() - started,
         });
         return formatSpecialistResult(specialistOk('Analyst', result.text));
       } catch (err) {
-        return formatSpecialistResult(
-          specialistFail('Analyst', err, 'generate', provider),
-        );
+        logBotExecution('bot_execute_fail', bot, {
+          operation: 'generate',
+          provider,
+          elapsedMs: Date.now() - started,
+          category: 'provider',
+          message: err instanceof Error ? err.message : 'unknown',
+        });
+        return formatSpecialistResult(specialistFail('Analyst', err, 'generate', provider));
       }
     },
   });

@@ -1,31 +1,22 @@
-import { tool, type ModelMessage } from 'ai';
+import { tool } from 'ai';
 import { z } from 'zod';
 import { logSafe, logSafeError } from '../observability';
 import type { CalendarEnv } from '../connectors/calendar-oauth';
 import { listEvents, checkAvailability, createEvent } from '../connectors/calendar-tools';
+import {
+  checkSendApproval,
+  createApprovalGate,
+  INVITE_APPROVAL_PATTERN,
+  type ApprovalGate,
+} from '../policy/approval';
+import { assertBotMayPerform } from '../bots/runtime';
+import { getBotDefinition } from '../bots';
 
 export interface CalendarToolEnv extends CalendarEnv {
   DB: D1Database;
 }
 
-const APPROVAL_PATTERN = /\b(i approve|approved|confirm send|please send|go ahead and send|confirm invite|yes invite|send the invite)\b/i;
-
-function lastUserMessageText(messages: ModelMessage[]): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m = messages[i];
-    if (m.role !== 'user') continue;
-    if (typeof m.content === 'string') return m.content;
-    if (Array.isArray(m.content)) {
-      return m.content
-        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-        .map((p) => p.text)
-        .join(' ');
-    }
-  }
-  return '';
-}
-
-export function delegateToCalendarTool(env: CalendarToolEnv) {
+export function delegateToCalendarTool(env: CalendarToolEnv, gate: ApprovalGate = createApprovalGate()) {
   return tool({
     description:
       'Interact with the connected Google Calendar. ' +
@@ -55,16 +46,24 @@ export function delegateToCalendarTool(env: CalendarToolEnv) {
     execute: async (input, { messages }) => {
       const ctx = { db: env.DB, env };
       const started = Date.now();
+      const manager = getBotDefinition('mian');
+      const actionKey =
+        input.action === 'create_event' && input.attendees?.length
+          ? 'calendar.create_event+attendees'
+          : `calendar.${input.action}`;
+
+      const permitted = assertBotMayPerform(manager, actionKey);
+      if (!permitted.ok) return { ok: false, error: permitted.error };
 
       if (input.action === 'create_event' && input.attendees?.length) {
-        if (!APPROVAL_PATTERN.test(lastUserMessageText(messages))) {
-          return {
-            ok: false,
-            error:
-              'Inviting attendees sends real email invites and requires explicit user approval. ' +
-              'Ask the user to confirm before creating this event.',
-          };
-        }
+        const decision = checkSendApproval(
+          messages,
+          gate,
+          INVITE_APPROVAL_PATTERN,
+          'Inviting attendees sends real email invites and requires explicit user approval. ' +
+            'Ask the user to confirm before creating this event.',
+        );
+        if (!decision.ok) return { ok: false, error: decision.error };
       }
 
       try {

@@ -52,3 +52,13 @@ export {
   resolveBotParticleAgent,
   toCatalog,
 } from './registry';
+export {
+  assertBotMayPerform,
+  botRequiresApproval,
+  DELEGATE_TARGET_SLUG,
+  logBotExecution,
+  requireRunnableBot,
+  resolveBotModel,
+  selectBotTools,
+} from './runtime';
+export type { BotModelEnv, DelegateToolName, ResolveBotModelOptions } from './runtime';

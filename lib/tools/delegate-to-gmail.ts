@@ -1,6 +1,9 @@
-import { tool, type ModelMessage } from 'ai';
+import { tool } from 'ai';
 import { z } from 'zod';
 import { logSafe, logSafeError } from '../observability';
+import { checkSendApproval, createApprovalGate, type ApprovalGate } from '../policy/approval';
+import { assertBotMayPerform, botRequiresApproval } from '../bots/runtime';
+import { getBotDefinition } from '../bots';
 import type { GmailEnv } from '../connectors/gmail-oauth';
 import {
   searchEmails,
@@ -24,31 +27,13 @@ export interface GmailToolEnv extends GmailEnv {
 /** Actions that write/send — require an explicit approval phrase from the user. */
 const SEND_ACTIONS = new Set(['send_email', 'reply_to_thread', 'forward_email', 'send_draft']);
 
-const APPROVAL_PATTERN = /\b(i approve|approved|confirm send|please send|go ahead and send)\b/i;
-
 /**
- * Extract the text of the most recent *user* turn from the real conversation
- * sent to the model. Deliberately ignores `input.task` (a string the model
- * writes itself as a tool-call argument) — trusting that would let the model
- * grant its own approval by simply including the magic phrase in a field it
- * fully controls.
+ * Approval is checked against the real last user message via lib/policy/approval —
+ * never against `input.task`, which the model authors itself (it could otherwise
+ * grant its own approval). `gate` is the per-request send budget; the Manager passes
+ * one shared gate to every send-capable tool so one approval = one send per turn.
  */
-function lastUserMessageText(messages: ModelMessage[]): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m = messages[i];
-    if (m.role !== 'user') continue;
-    if (typeof m.content === 'string') return m.content;
-    if (Array.isArray(m.content)) {
-      return m.content
-        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-        .map((p) => p.text)
-        .join(' ');
-    }
-  }
-  return '';
-}
-
-export function delegateToGmailTool(env: GmailToolEnv) {
+export function delegateToGmailTool(env: GmailToolEnv, gate: ApprovalGate = createApprovalGate()) {
   return tool({
     description:
       'Interact with the connected Gmail account. ' +
@@ -94,17 +79,21 @@ export function delegateToGmailTool(env: GmailToolEnv) {
     execute: async (input, { messages }) => {
       const ctx = { db: env.DB, env };
       const started = Date.now();
+      const manager = getBotDefinition('mian');
+      const actionKey = `gmail.${input.action}`;
+
+      // BotDefinition.permissions first — does not replace the phrase gate below.
+      const permitted = assertBotMayPerform(manager, actionKey);
+      if (!permitted.ok) return { ok: false, error: permitted.error };
 
       // Block send actions unless the user's own most recent message contains
       // explicit approval language. Checked against real conversation history,
       // never against `input.task`, which the model authors itself.
-      if (SEND_ACTIONS.has(input.action) && !APPROVAL_PATTERN.test(lastUserMessageText(messages))) {
-        return {
-          ok: false,
-          error:
-            'Send actions require explicit user approval. ' +
-            'Ask the user to confirm before sending.',
-        };
+      if (SEND_ACTIONS.has(input.action) || botRequiresApproval(manager, actionKey)) {
+        if (SEND_ACTIONS.has(input.action)) {
+          const decision = checkSendApproval(messages, gate);
+          if (!decision.ok) return { ok: false, error: decision.error };
+        }
       }
 
       try {
@@ -223,12 +212,14 @@ export function delegateToGmailTool(env: GmailToolEnv) {
         }
 
         logSafe('gmail_tool_ok', {
+          bot: manager.slug,
           operation: input.action,
           elapsedMs: Date.now() - started,
         });
         return { ok: true, data: result };
       } catch (err) {
         logSafeError('gmail_tool_failed', err, {
+          bot: manager.slug,
           operation: input.action,
           category: 'auth',
           elapsedMs: Date.now() - started,

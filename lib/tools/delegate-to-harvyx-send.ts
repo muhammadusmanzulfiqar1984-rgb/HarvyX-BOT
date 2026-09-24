@@ -1,6 +1,9 @@
-import { tool, type ModelMessage } from 'ai';
+import { tool } from 'ai';
 import { z } from 'zod';
 import { harvyxRequest, toolErrorResult, type HarvyxEnv } from './harvyx/client';
+import { checkSendApproval, createApprovalGate, type ApprovalGate } from '../policy/approval';
+import { assertBotMayPerform } from '../bots/runtime';
+import { getBotDefinition } from '../bots';
 
 /**
  * Manager-level tool for HarvYX actions that leave the system (SMS/WhatsApp send,
@@ -10,24 +13,7 @@ import { harvyxRequest, toolErrorResult, type HarvyxEnv } from './harvyx/client'
  * lives on the Manager, which does see real messages.
  */
 
-const APPROVAL_PATTERN = /\b(i approve|approved|confirm send|please send|go ahead and send)\b/i;
-
-function lastUserMessageText(messages: ModelMessage[]): string {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    const m = messages[i];
-    if (m.role !== 'user') continue;
-    if (typeof m.content === 'string') return m.content;
-    if (Array.isArray(m.content)) {
-      return m.content
-        .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-        .map((p) => p.text)
-        .join(' ');
-    }
-  }
-  return '';
-}
-
-export function delegateToHarvyxSendTool(env: HarvyxEnv) {
+export function delegateToHarvyxSendTool(env: HarvyxEnv, gate: ApprovalGate = createApprovalGate()) {
   return tool({
     description:
       'Send outbound SMS/WhatsApp via HarvYX (Twilio), or send a queued HarvYX outreach item ' +
@@ -41,12 +27,12 @@ export function delegateToHarvyxSendTool(env: HarvyxEnv) {
       outreachId: z.string().max(120).optional().describe('Required for send_outreach — never invent an id'),
     }),
     execute: async (input, { messages }) => {
-      if (!APPROVAL_PATTERN.test(lastUserMessageText(messages))) {
-        return {
-          ok: false,
-          error: 'Send actions require explicit user approval. Ask the user to confirm before sending.',
-        };
-      }
+      const manager = getBotDefinition('mian');
+      const permitted = assertBotMayPerform(manager, `harvyxSend.${input.action}`);
+      if (!permitted.ok) return { ok: false, error: permitted.error };
+
+      const decision = checkSendApproval(messages, gate);
+      if (!decision.ok) return { ok: false, error: decision.error };
 
       try {
         if (input.action === 'send_text') {
