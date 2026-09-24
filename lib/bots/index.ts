@@ -1,11 +1,25 @@
 export type {
+  BotApprovalPolicy,
+  BotAutonomy,
+  BotBehaviorProfile,
+  BotCapabilities,
   BotCatalogItem,
+  BotDefinition,
   BotKind,
+  BotLifecycleStatus,
+  BotModelPolicy,
   BotModelTier,
+  BotPermissions,
   BotRecord,
   BotStatus,
   BotToolPack,
+  BotVisualRef,
   TeamRecord,
+} from './types';
+export {
+  BOT_LIFECYCLE_STATUSES,
+  isRunnableStatus,
+  normalizeBotStatus,
 } from './types';
 export {
   ANALYST_INSTRUCTIONS,
@@ -20,9 +34,21 @@ export {
   getCanonicalBot,
 } from './definitions';
 export {
+  BotRegistry,
+  BotRegistryError,
+  createBotRegistryFromDefinitions,
+  getBotRegistry,
+  resetBotRegistryForTests,
+} from './bot-registry';
+export type { BotRegistryPatch } from './bot-registry';
+export {
+  DEFINITIONS_SIGNATURE,
   ensureBotRegistrySeeded,
   getBotBySlug,
   getBotDefinition,
+  getBotVisual,
   listInstalledBots,
   listMarketplaceBots,
+  resolveBotParticleAgent,
+  toCatalog,
 } from './registry';

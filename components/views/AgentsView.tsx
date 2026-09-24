@@ -1,23 +1,26 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { NavSection } from '../nav';
+import type { WorkspaceSection } from '../nav';
 import type { BotCatalogItem } from '@/lib/bots/types';
-import { HorseRunningIcon, LionRoaringIcon } from '../AgentTotems';
+import { LivingParticleAgent } from '../LivingParticleAgent';
+import { resolveAgentId } from '@/lib/living-particle';
 
 const FALLBACK: BotCatalogItem[] = [
   {
     id: 'mian',
     slug: 'mian',
     name: 'HarvYX Bot',
+    displayName: 'HARVYX Manager',
     role: 'Manager',
     kind: 'orchestrator',
-    description:
-      'The only agent the user talks to directly. Answers strategic and simple questions itself, and delegates operational or analytical work to OPS and Analyst.',
+    description: 'Master command. Answers directly or delegates.',
     status: 'active',
-    tags: ['Orchestration', 'Direct response'],
+    version: 1,
+    tags: [],
     modelTier: 'fast',
     toolPack: 'delegate',
+    visual: { symbol: 'lion', particleAgent: 'manager', motionProfile: 'lion-breath' },
   },
   {
     id: 'ops',
@@ -25,12 +28,13 @@ const FALLBACK: BotCatalogItem[] = [
     name: 'OPS',
     role: 'Operations',
     kind: 'specialist',
-    description:
-      'Reads and writes HarvYX lead and campaign data — pipeline stats, campaign performance, lead search, adding contacts, creating campaigns.',
+    description: 'HarvYX CRM — leads, campaigns, pipeline, drafts.',
     status: 'active',
-    tags: ['HarvYX', 'Leads', 'Campaigns'],
+    version: 1,
+    tags: [],
     modelTier: 'fast',
     toolPack: 'harvyx',
+    visual: { symbol: 'horse', particleAgent: 'ops', motionProfile: 'horse-gallop' },
   },
   {
     id: 'analyst',
@@ -38,24 +42,13 @@ const FALLBACK: BotCatalogItem[] = [
     name: 'Analyst',
     role: 'Reasoning',
     kind: 'specialist',
-    description: 'Deep reasoning, drafting, and research synthesis on tasks delegated by HarvYX Bot.',
+    description: 'Deep reasoning, synthesis, strategy briefs.',
     status: 'active',
-    tags: ['Reasoning', 'Drafting', 'Research'],
+    version: 1,
+    tags: [],
     modelTier: 'reasoning',
     toolPack: 'none',
-  },
-  {
-    id: 'social',
-    slug: 'social',
-    name: 'Social',
-    role: 'Social Media',
-    kind: 'specialist',
-    description:
-      'Platform-accurate social media strategy and critique across LinkedIn, Instagram, X, Facebook, TikTok, and WhatsApp — real mechanics, not generic advice.',
-    status: 'active',
-    tags: ['Social Media', 'Strategy', 'Content'],
-    modelTier: 'reasoning',
-    toolPack: 'none',
+    visual: { symbol: 'owl', particleAgent: 'analyst', motionProfile: 'owl-observe' },
   },
   {
     id: 'scrape',
@@ -63,35 +56,42 @@ const FALLBACK: BotCatalogItem[] = [
     name: 'Scrape',
     role: 'Web Research',
     kind: 'specialist',
-    description:
-      'Fetches and extracts public web pages — company/lead enrichment, competitor/market research, general URL lookup. SSRF-guarded, robots.txt-respecting, no JS rendering.',
+    description: 'Public URL extraction and enrichment.',
     status: 'active',
-    tags: ['Web', 'Research', 'Enrichment'],
+    version: 1,
+    tags: [],
     modelTier: 'fast',
     toolPack: 'scrape',
+    visual: { symbol: 'falcon', particleAgent: 'scrape', motionProfile: 'falcon-flight' },
+  },
+  {
+    id: 'social',
+    slug: 'social',
+    name: 'Social',
+    role: 'Social Media',
+    kind: 'specialist',
+    description: 'Platform strategy and content critique.',
+    status: 'active',
+    version: 1,
+    tags: [],
+    modelTier: 'reasoning',
+    toolPack: 'none',
+    visual: { symbol: 'hummingbird', particleAgent: 'social', motionProfile: 'hummingbird-hover' },
   },
 ];
 
-function TotemForSlug({ slug }: { slug: string }) {
-  if (slug === 'ops' || slug === 'scrape') {
-    return (
-      <span className={`agent-card-totem ${slug === 'ops' ? 'ops' : 'scrape'}`} aria-hidden>
-        <HorseRunningIcon active />
-      </span>
-    );
-  }
-  if (slug === 'analyst' || slug === 'social') {
-    return (
-      <span className={`agent-card-totem ${slug === 'analyst' ? 'analyst' : 'social'}`} aria-hidden>
-        <LionRoaringIcon active />
-      </span>
-    );
-  }
-  return null;
+const ORDER = ['mian', 'ops', 'analyst', 'scrape', 'social'];
+
+/** Prefer BotDefinition.visual.particleAgent; fall back to living-particle alias map. */
+function particleAgentFor(bot: BotCatalogItem): string {
+  const fromBot = bot.visual?.particleAgent?.trim();
+  if (fromBot) return fromBot;
+  return resolveAgentId(bot.slug) ?? bot.slug;
 }
 
-export function AgentsView({ onNavigate }: { onNavigate: (section: NavSection) => void }) {
+export function AgentsView({ onNavigate }: { onNavigate: (section: WorkspaceSection) => void }) {
   const [agents, setAgents] = useState<BotCatalogItem[]>(FALLBACK);
+  const [selected, setSelected] = useState<string>('mian');
 
   useEffect(() => {
     let cancelled = false;
@@ -100,7 +100,10 @@ export function AgentsView({ onNavigate }: { onNavigate: (section: NavSection) =
       .then((data) => {
         if (cancelled) return;
         if (Array.isArray(data?.installed) && data.installed.length > 0) {
-          setAgents(data.installed);
+          const bySlug = new Map(data.installed.map((a) => [a.slug, a]));
+          const ordered = ORDER.map((s) => bySlug.get(s)).filter(Boolean) as BotCatalogItem[];
+          const rest = data.installed.filter((a) => !ORDER.includes(a.slug));
+          setAgents([...ordered, ...rest]);
         }
       })
       .catch(() => {
@@ -111,34 +114,60 @@ export function AgentsView({ onNavigate }: { onNavigate: (section: NavSection) =
     };
   }, []);
 
+  const active = agents.find((a) => a.slug === selected) ?? agents[0];
+  const activeKey = active ? particleAgentFor(active) : 'manager';
+
   return (
     <div className="view-shell">
       <div className="view-header">
         <h1>Agents</h1>
-        <p>
-          OPS &amp; Scrape = running horse · Analyst &amp; Social = roaring lion. Full thinking motion
-          appears in Chat when they work.
-        </p>
+        <p>Living particle agents. Select to inspect symbolic form.</p>
       </div>
-      <div className="agent-grid">
-        {agents.map((a) => (
-          <div key={a.slug} className="card agent-card">
-            <div className="card-eyebrow">{a.role}</div>
-            <TotemForSlug slug={a.slug} />
-            <h3>{a.name}</h3>
-            <p>{a.description}</p>
-            <div className="tag-row">
-              {a.tags.map((t) => (
-                <span key={t} className="tag">
-                  {t}
-                </span>
-              ))}
-            </div>
-            <button className="btn-secondary" onClick={() => onNavigate('chat')}>
-              Open in Chat
-            </button>
+
+      {active ? (
+        <div className="agent-living-stage" aria-live="polite">
+          <LivingParticleAgent
+            key={active.slug}
+            agent={activeKey}
+            size={300}
+            entranceRoar={activeKey === 'manager'}
+            metal={activeKey === 'manager' ? 'gold' : 'silver'}
+            maxParticles={42000}
+            label={`HARVYX ${activeKey}`}
+          />
+          <div className="agent-living-meta">
+            <span className="agent-living-name">{active.name}</span>
+            <span className="agent-living-role">{active.role}</span>
+            <span className="agent-living-desc">{active.description}</span>
           </div>
-        ))}
+        </div>
+      ) : null}
+
+      <div className="agent-roster">
+        {agents.map((a) => {
+          const isOn = a.slug === selected;
+          const glyph = particleAgentFor(a).slice(0, 1).toUpperCase();
+          return (
+            <button
+              key={a.slug}
+              type="button"
+              className={`agent-sign agent-sign-${a.slug}${isOn ? ' is-selected' : ''}`}
+              onClick={() => setSelected(a.slug)}
+              onDoubleClick={() => onNavigate('chat')}
+              aria-pressed={isOn}
+            >
+              <span className="agent-sign-totem agent-sign-glyph" aria-hidden>
+                {glyph}
+              </span>
+              <span className="agent-sign-copy">
+                <span className="agent-sign-name">{a.name}</span>
+                <span className="agent-sign-role">{a.role}</span>
+                <span className="agent-sign-desc">{a.description}</span>
+              </span>
+              <span className="agent-sign-status">{isOn ? 'Viewing' : 'Active'}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
