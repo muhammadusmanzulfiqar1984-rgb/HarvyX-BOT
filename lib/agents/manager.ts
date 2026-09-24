@@ -1,5 +1,6 @@
 import { ToolLoopAgent, InferAgentUIMessage } from 'ai';
 import type { ManagerProvider } from '../models/router';
+import { isLocalH100Provider, LOCAL_H100_PROVIDER } from '../models/local-h100';
 import { getBotDefinition } from '../bots';
 import {
   resolveBotModel,
@@ -28,6 +29,42 @@ export type ManagerOptions = {
   provider?: ManagerProvider;
 };
 
+export type ManagerRuntimeStatus = {
+  provider: ManagerProvider;
+  modelId: string;
+  onH100: boolean;
+};
+
+/**
+ * Actual Manager backend for this request — from resolved options + env model ids.
+ * No secrets. Used so Manager can answer model/provider/H100 questions truthfully.
+ */
+export function resolveManagerRuntimeStatus(
+  env: ManagerEnv,
+  options: ManagerOptions = {},
+): ManagerRuntimeStatus {
+  const provider: ManagerProvider = isLocalH100Provider(options.provider)
+    ? LOCAL_H100_PROVIDER
+    : 'groq';
+  const onH100 = provider === LOCAL_H100_PROVIDER;
+  const modelId = onH100
+    ? (env.HARVYX_H100_MODEL?.trim() || '(HARVYX_H100_MODEL unset)')
+    : (env.GROQ_FAST_MODEL?.trim() || 'openai/gpt-oss-120b');
+  return { provider, modelId, onH100 };
+}
+
+/** Append-only runtime block — never replaces canonical BotDefinition instructions. */
+export function buildManagerRuntimeStatusBlock(status: ManagerRuntimeStatus): string {
+  return (
+    '\n\nRUNTIME STATUS (authoritative for this request — answer truthfully; do not invent or deny these facts):\n' +
+    `- Provider: ${status.provider}\n` +
+    `- Model: ${status.modelId}\n` +
+    `- Running on HARVYX H100: ${status.onH100 ? 'yes' : 'no'}\n` +
+    'When asked what model or provider you are using, or whether you are running on the H100, ' +
+    'state these values plainly. Do not claim lack of visibility into your own runtime.'
+  );
+}
+
 /** Resolve the Manager's model from BotDefinition.modelPolicy → Model Router. */
 export function resolveManagerModel(env: ManagerEnv, options: ManagerOptions = {}) {
   const bot = requireRunnableBot('mian');
@@ -52,15 +89,17 @@ export function createManagerAgent(env: ManagerEnv, options: ManagerOptions = {}
   };
 
   const tools = selectBotTools(bot, available) as typeof available;
+  const runtime = resolveManagerRuntimeStatus(env, options);
+  const effectiveProvider = options.provider ?? bot.modelPolicy.provider ?? 'groq';
 
   logBotExecution('bot_execute_start', bot, {
     operation: 'createManagerAgent',
-    provider: options.provider ?? bot.modelPolicy.provider ?? 'groq',
+    provider: effectiveProvider,
   });
 
   return new ToolLoopAgent({
     model: resolveBotModel(bot, env, { provider: options.provider }),
-    instructions: bot.instructions,
+    instructions: bot.instructions + buildManagerRuntimeStatusBlock(runtime),
     tools,
   });
 }
