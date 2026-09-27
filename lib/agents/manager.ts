@@ -33,6 +33,8 @@ export type ManagerRuntimeStatus = {
   provider: ManagerProvider;
   modelId: string;
   onH100: boolean;
+  /** Tool names actually attached to the Manager for this request. */
+  availableTools: string[];
 };
 
 /**
@@ -42,6 +44,7 @@ export type ManagerRuntimeStatus = {
 export function resolveManagerRuntimeStatus(
   env: ManagerEnv,
   options: ManagerOptions = {},
+  availableTools: string[] = [],
 ): ManagerRuntimeStatus {
   const provider: ManagerProvider = isLocalH100Provider(options.provider)
     ? LOCAL_H100_PROVIDER
@@ -50,18 +53,33 @@ export function resolveManagerRuntimeStatus(
   const modelId = onH100
     ? (env.HARVYX_H100_MODEL?.trim() || '(HARVYX_H100_MODEL unset)')
     : (env.GROQ_FAST_MODEL?.trim() || 'openai/gpt-oss-120b');
-  return { provider, modelId, onH100 };
+  return {
+    provider,
+    modelId,
+    onH100,
+    availableTools: [...availableTools].sort(),
+  };
 }
 
 /** Append-only runtime block — never replaces canonical BotDefinition instructions. */
 export function buildManagerRuntimeStatusBlock(status: ManagerRuntimeStatus): string {
+  const tools =
+    status.availableTools.length > 0
+      ? status.availableTools.join(', ')
+      : '(none attached this request)';
+
   return (
-    '\n\nRUNTIME STATUS (authoritative for this request — answer truthfully; do not invent or deny these facts):\n' +
+    '\n\nRUNTIME ACCESS (authoritative for this request — answer "what can you access?" from this list only):\n' +
+    `- Available tools: ${tools}\n` +
+    '- Tool presence means you may attempt that tool. It does NOT mean a connector is connected, that CRM/email/calendar/SMS data is already loaded, or that you have live access to every Harvics venture system.\n' +
+    '- Gmail / Calendar / harvyxSend require a working connector or API result this turn before you claim inbox/calendar/send access.\n' +
+    '- Ops/HARVYX CRM data is available only via Ops delegation tools after a successful tool result — not because HARVYX exists in the ecosystem.\n' +
+    '- Never claim HR, textile manufacturing, business forum, trade-network, employee, financial, or proprietary-database access from ecosystem context alone.\n' +
+    '\nRUNTIME MODEL (internal — disclose only if the user asks about model, provider, or infrastructure):\n' +
     `- Provider: ${status.provider}\n` +
     `- Model: ${status.modelId}\n` +
     `- Running on HARVYX H100: ${status.onH100 ? 'yes' : 'no'}\n` +
-    'When asked what model or provider you are using, or whether you are running on the H100, ' +
-    'state these values plainly. Do not claim lack of visibility into your own runtime.'
+    'Do not volunteer provider/model/H100/vLLM/local-coder details in identity or access answers. If asked about model/provider/H100, state these values plainly and do not invent or deny them.'
   );
 }
 
@@ -89,7 +107,7 @@ export function createManagerAgent(env: ManagerEnv, options: ManagerOptions = {}
   };
 
   const tools = selectBotTools(bot, available) as typeof available;
-  const runtime = resolveManagerRuntimeStatus(env, options);
+  const runtime = resolveManagerRuntimeStatus(env, options, Object.keys(tools));
   const effectiveProvider = options.provider ?? bot.modelPolicy.provider ?? 'groq';
 
   logBotExecution('bot_execute_start', bot, {

@@ -120,17 +120,25 @@ async function main() {
   const mgrH100 = mid(resolveManagerModel(mgrEnv, { provider: 'local_h100' }));
   assert.ok(mgrH100.provider.startsWith('local_h100'));
   assert.equal(mgrH100.modelId, H100.HARVYX_H100_MODEL);
-  const rtH100 = resolveManagerRuntimeStatus(mgrEnv, { provider: 'local_h100' });
+  const rtH100 = resolveManagerRuntimeStatus(mgrEnv, { provider: 'local_h100' }, [
+    'delegateToOps',
+    'gmail',
+  ]);
   assert.equal(rtH100.provider, 'local_h100');
   assert.equal(rtH100.modelId, H100.HARVYX_H100_MODEL);
   assert.equal(rtH100.onH100, true);
+  assert.deepEqual(rtH100.availableTools, ['delegateToOps', 'gmail']);
   const rtGroq = resolveManagerRuntimeStatus(mgrEnv, { provider: 'groq' });
   assert.equal(rtGroq.provider, 'groq');
   assert.equal(rtGroq.onH100, false);
+  assert.deepEqual(rtGroq.availableTools, []);
   const block = buildManagerRuntimeStatusBlock(rtH100);
+  assert.ok(block.includes('RUNTIME ACCESS'));
+  assert.ok(block.includes('Available tools: delegateToOps, gmail'));
   assert.ok(block.includes('Provider: local_h100'));
   assert.ok(block.includes(`Model: ${H100.HARVYX_H100_MODEL}`));
   assert.ok(block.includes('Running on HARVYX H100: yes'));
+  assert.ok(block.includes('Do not volunteer provider/model/H100'));
   assert.ok(!/secret|api[_-]?key/i.test(block));
   ok('5a Manager: default=Groq, explicit local_h100 selects H100');
 

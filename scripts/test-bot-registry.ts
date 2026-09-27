@@ -163,7 +163,10 @@ assert.equal(getBotDefinition('analyst').modelTier, 'reasoning');
 assert.equal(getBotDefinition('mian').instructions, MIAN_INSTRUCTIONS);
 assert.equal(getBotDefinition('ops').instructions, OPS_INSTRUCTIONS);
 assert.equal(getBotDefinition('analyst').instructions, ANALYST_INSTRUCTIONS);
-assert.ok(MIAN_INSTRUCTIONS.includes('You are HARVYX'));
+assert.ok(MIAN_INSTRUCTIONS.includes('You are HARVYX-BOT'));
+assert.ok(MIAN_INSTRUCTIONS.includes('HARVYX (also written HarvyX / HarvYX) is a separate CRM'));
+assert.ok(MIAN_INSTRUCTIONS.includes('Answer "what can you access?" ONLY from the RUNTIME ACCESS block'));
+assert.ok(!/Sign yourself only as HARVYX\b/.test(MIAN_INSTRUCTIONS));
 assert.ok(!/Mian Muhammad Usman|\bMMU\b/i.test(MIAN_INSTRUCTIONS));
 
 const env = {
