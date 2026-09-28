@@ -54,6 +54,11 @@ function isBlockedDirectTarget(hostname: string): boolean {
   return BLOCKED_DIRECT_TARGETS.some((d) => h === d || h.endsWith(`.${d}`));
 }
 
+/** workerd exposes WebSocketPair; Node does not. */
+function isCloudflareWorkerRuntime(): boolean {
+  return typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair === 'function';
+}
+
 async function assertSafeUrl(url: URL): Promise<void> {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     throw new ScrapeBlockedError('Only http/https URLs are allowed.');
@@ -66,6 +71,14 @@ async function assertSafeUrl(url: URL): Promise<void> {
   }
   if (url.hostname === 'localhost' || url.hostname.endsWith('.localhost')) {
     throw new ScrapeBlockedError('Localhost targets are not allowed.');
+  }
+
+  // On Cloudflare Workers, node:dns lookup often returns addresses that trip this
+  // SSRF guard as false positives (public hosts like wikipedia.org). Platform
+  // fetch() already blocks private/internal destinations — keep hostname checks
+  // above and skip the redundant DNS private-IP probe in workerd.
+  if (isCloudflareWorkerRuntime()) {
+    return;
   }
 
   let resolved: { address: string; family: number }[];
