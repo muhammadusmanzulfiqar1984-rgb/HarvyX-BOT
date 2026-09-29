@@ -1,9 +1,15 @@
 'use client';
 
+import { parseJson } from '@/lib/client-api';
 import { useEffect, useState } from 'react';
 import type { WorkspaceSection } from '../nav';
-import type { BotCatalogItem } from '@/lib/bots/types';
-import { LivingParticleAgent } from '../LivingParticleAgent';
+import type { BotCatalogItem, BotLifecycleStatus } from '@/lib/bots/types';
+import { AgentAvatar, type AgentUxState } from '../AgentAvatar';
+import {
+  AGENT_IDENTITIES,
+  animalLabel,
+  resolveAgentIdentity,
+} from '@/lib/agent-avatar/identity';
 import { resolveAgentId } from '@/lib/living-particle';
 
 const FALLBACK: BotCatalogItem[] = [
@@ -82,16 +88,39 @@ const FALLBACK: BotCatalogItem[] = [
 
 const ORDER = ['mian', 'ops', 'analyst', 'scrape', 'social'];
 
-/** Prefer BotDefinition.visual.particleAgent; fall back to living-particle alias map. */
+const DEMO_STATES: AgentUxState[] = [
+  'idle',
+  'thinking',
+  'working',
+  'researching',
+  'scraping',
+  'analyzing',
+  'delegating',
+  'completed',
+  'error',
+];
+
 function particleAgentFor(bot: BotCatalogItem): string {
   const fromBot = bot.visual?.particleAgent?.trim();
   if (fromBot) return fromBot;
   return resolveAgentId(bot.slug) ?? bot.slug;
 }
 
+function statusLabel(status: string): string {
+  if (status === 'active') return 'Active';
+  if (status === 'paused') return 'Paused';
+  if (status === 'archived') return 'Archived';
+  if (status === 'testing') return 'Testing';
+  return status;
+}
+
 export function AgentsView({ onNavigate }: { onNavigate: (section: WorkspaceSection) => void }) {
   const [agents, setAgents] = useState<BotCatalogItem[]>(FALLBACK);
   const [selected, setSelected] = useState<string>('mian');
+  const [busySlug, setBusySlug] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [demoState, setDemoState] = useState<AgentUxState>('idle');
+  const [multiActive, setMultiActive] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,39 +143,145 @@ export function AgentsView({ onNavigate }: { onNavigate: (section: WorkspaceSect
     };
   }, []);
 
+  async function patchStatus(slug: string, status: BotLifecycleStatus) {
+    setBusySlug(slug);
+    setError(null);
+    try {
+      const res = await fetch(`/api/bots/${slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const data = await parseJson(res);
+      if (!res.ok) throw new Error(data?.error || 'Status update failed.');
+      const nextStatus = (data?.bot?.status as BotLifecycleStatus) || status;
+      setAgents((prev) =>
+        prev.map((a) => (a.slug === slug ? { ...a, status: nextStatus } : a)),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Status update failed.');
+    } finally {
+      setBusySlug(null);
+    }
+  }
+
   const active = agents.find((a) => a.slug === selected) ?? agents[0];
   const activeKey = active ? particleAgentFor(active) : 'manager';
+  const identity = resolveAgentIdentity(active?.slug ?? 'mian');
+
+  function rosterStateFor(slug: string): AgentUxState {
+    if (!multiActive) {
+      return slug === selected ? demoState : 'idle';
+    }
+    if (slug === 'mian') {
+      if (demoState === 'error') return 'error';
+      if (demoState === 'completed') return 'completed';
+      return 'delegating';
+    }
+    if (slug === 'scrape') return 'scraping';
+    if (slug === 'analyst') return 'analyzing';
+    if (slug === 'ops' || slug === 'social') return 'working';
+    return demoState;
+  }
 
   return (
-    <div className="view-shell">
+    <div className="view-shell shell-view">
       <div className="view-header">
         <h1>Agents</h1>
-        <p>Living particle agents. Select to inspect symbolic form.</p>
+        <p>Living particle animals. Pause, activate, or archive via the bot registry.</p>
+      </div>
+
+      {error ? <p className="shell-error" role="alert">{error}</p> : null}
+
+      <div className="agent-state-demo" aria-label="Animal animation state demo">
+        <span className="agent-state-demo-label">Visual state</span>
+        <div className="agent-state-demo-row">
+          {DEMO_STATES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              className={`agent-state-chip${demoState === s ? ' is-on' : ''}`}
+              onClick={() => setDemoState(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <label className="agent-state-multi">
+          <input
+            type="checkbox"
+            checked={multiActive}
+            onChange={(e) => setMultiActive(e.target.checked)}
+          />
+          Multiple agents active (delegation)
+        </label>
       </div>
 
       {active ? (
         <div className="agent-living-stage" aria-live="polite">
-          <LivingParticleAgent
+          <AgentAvatar
             key={active.slug}
             agent={activeKey}
+            state={rosterStateFor(active.slug)}
             size={300}
             entranceRoar={activeKey === 'manager'}
             metal={activeKey === 'manager' ? 'gold' : 'silver'}
-            maxParticles={42000}
-            label={`HARVYX ${activeKey}`}
+            label={`HARVYX ${identity.label} · ${animalLabel(identity.animal)}`}
           />
           <div className="agent-living-meta">
-            <span className="agent-living-name">{active.name}</span>
-            <span className="agent-living-role">{active.role}</span>
+            <span className="agent-living-name">
+              {active.slug === 'mian' ? 'HARVYX BOT' : active.name}
+            </span>
+            <span className="agent-living-role">
+              {active.slug === 'mian' ? 'Manager' : active.role}
+              {' · '}
+              {animalLabel(identity.animal)}
+            </span>
             <span className="agent-living-desc">{active.description}</span>
+            <span className={`badge ${active.status === 'active' ? 'badge-active' : 'badge-planned'}`}>
+              {statusLabel(active.status)} · {rosterStateFor(active.slug)}
+            </span>
+            <div className="shell-actions" style={{ marginTop: 12 }}>
+              {active.status !== 'active' ? (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  disabled={busySlug === active.slug}
+                  onClick={() => patchStatus(active.slug, 'active')}
+                >
+                  Activate
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={busySlug === active.slug}
+                  onClick={() => patchStatus(active.slug, 'paused')}
+                >
+                  Pause
+                </button>
+              )}
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={busySlug === active.slug || active.status === 'archived'}
+                onClick={() => patchStatus(active.slug, 'archived')}
+              >
+                Archive
+              </button>
+              <button type="button" className="btn-primary" onClick={() => onNavigate('chat')}>
+                Open chat
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
 
-      <div className="agent-roster">
-        {agents.map((a) => {
+      <div className="agent-roster agent-roster--animals">
+        {AGENT_IDENTITIES.map((id) => {
+          const a = agents.find((x) => x.slug === id.slug);
+          if (!a) return null;
           const isOn = a.slug === selected;
-          const glyph = particleAgentFor(a).slice(0, 1).toUpperCase();
           return (
             <button
               key={a.slug}
@@ -156,15 +291,22 @@ export function AgentsView({ onNavigate }: { onNavigate: (section: WorkspaceSect
               onDoubleClick={() => onNavigate('chat')}
               aria-pressed={isOn}
             >
-              <span className="agent-sign-totem agent-sign-glyph" aria-hidden>
-                {glyph}
+              <span className="agent-sign-totem" aria-hidden>
+                <AgentAvatar
+                  agent={id.slug}
+                  state={rosterStateFor(id.slug)}
+                  size={56}
+                  className="hx-agent-avatar--sign"
+                />
               </span>
               <span className="agent-sign-copy">
-                <span className="agent-sign-name">{a.name}</span>
-                <span className="agent-sign-role">{a.role}</span>
+                <span className="agent-sign-name">{a.slug === 'mian' ? 'HARVYX BOT' : a.name}</span>
+                <span className="agent-sign-role">
+                  {a.slug === 'mian' ? 'Manager' : a.role} · {animalLabel(id.animal)}
+                </span>
                 <span className="agent-sign-desc">{a.description}</span>
               </span>
-              <span className="agent-sign-status">{isOn ? 'Viewing' : 'Active'}</span>
+              <span className="agent-sign-status">{statusLabel(a.status)}</span>
             </button>
           );
         })}
