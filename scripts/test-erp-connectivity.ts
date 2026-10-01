@@ -13,16 +13,18 @@ const env = {
   HARVICS_API_KEY: process.env.HARVICS_API_KEY,
 };
 
-const result = await checkErpConnectivity(env);
-
-if (result.ok) {
-  console.log(`PASS  ERP reachable in ${result.latencyMs}ms`);
-  console.log(`      Domains: ${result.domains.join(', ')}`);
-  process.exit(0);
-} else {
+async function main() {
+  const result = await checkErpConnectivity(env);
+  if (result.ok) {
+    console.log(`PASS  ERP reachable in ${result.latencyMs}ms`);
+    console.log(`      Domains: ${result.domains.join(', ')}`);
+    process.exit(0);
+  }
   console.error(`FAIL  ERP unreachable: ${result.error ?? 'unknown error'} (${result.latencyMs}ms)`);
   if (!env.HARVICS_API_KEY) {
     console.error('      Hint: set HARVICS_API_KEY=<INTERNAL_API_KEY value from harvics.com backend>');
   }
   process.exit(1);
 }
+
+void main();
