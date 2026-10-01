@@ -1,5 +1,22 @@
 /** SVG totems for specialist thinking — OPS = horse, Analyst = lion. No emojis. */
 
+import { AgentAvatar, type AgentUxState } from './AgentAvatar';
+
+const CORE_SIZE = { sm: 48, md: 72, lg: 112 } as const;
+
+/** MIAN's living-particle core, used as the home hero mark. */
+export function ManagerCoreIcon({
+  state = 'idle',
+  size = 'md',
+  className,
+}: {
+  state?: AgentUxState;
+  size?: keyof typeof CORE_SIZE;
+  className?: string;
+}) {
+  return <AgentAvatar agent="mian" state={state} size={CORE_SIZE[size]} className={className} />;
+}
+
 type TotemProps = {
   active: boolean;
   className?: string;
