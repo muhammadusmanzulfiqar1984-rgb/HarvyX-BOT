@@ -74,13 +74,13 @@ const SCRAPE_KEYWORDS = [
 
 type ScoredCandidate = { slug: DelegateSlug; score: number; keywords: string[] };
 
-function score(text: string, keywords: string[]): { score: number; matched: string[] } {
+function score(text: string, keywords: string[]): { score: number; keywords: string[] } {
   const lower = text.toLowerCase();
   const matched: string[] = [];
   for (const kw of keywords) {
     if (lower.includes(kw)) matched.push(kw);
   }
-  return { score: matched.length, matched };
+  return { score: matched.length, keywords: matched };
 }
 
 // ── Public API ────────────────────────────────────────────────────────────────
@@ -103,7 +103,7 @@ export function classifyIntent(
     { slug: 'social',  ...score(message, SOCIAL_KEYWORDS) },
     { slug: 'scrape',  ...score(message, SCRAPE_KEYWORDS) },
     { slug: 'erp',     ...score(message, ERP_KEYWORDS) },
-  ].map((c) => ({ slug: c.slug, score: c.score, keywords: (c as any).matched }));
+  ];
 
   candidates.sort((a, b) => b.score - a.score);
   const top = candidates[0];

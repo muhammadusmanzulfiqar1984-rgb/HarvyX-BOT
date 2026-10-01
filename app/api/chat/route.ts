@@ -1,6 +1,6 @@
 import { createAgentUIStreamResponse } from 'ai';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createManagerAgent, type ManagerUIMessage } from '@/lib/agents/manager';
+import { createManagerAgent, type ManagerEnv, type ManagerUIMessage } from '@/lib/agents/manager';
 import { ensureBotRegistrySeeded, getBotDefinition } from '@/lib/bots';
 import { getOrCreateConversation, appendMessagesSafe } from '@/lib/db/conversations';
 import { logSafe, logSafeError, sanitizeForLog } from '@/lib/observability';
@@ -50,6 +50,8 @@ export async function POST(request: Request) {
       ...env,
       HARVYX_API_KEY: env.HARVYX_API_KEY || process.env.HARVYX_API_KEY || '',
       HARVYX_API_BASE: env.HARVYX_API_BASE || process.env.HARVYX_API_BASE || '',
+      HARVICS_API_KEY: env.HARVICS_API_KEY || process.env.HARVICS_API_KEY || '',
+      HARVICS_API_BASE: env.HARVICS_API_BASE || process.env.HARVICS_API_BASE || '',
       GROQ_API_KEY: env.GROQ_API_KEY || process.env.GROQ_API_KEY || '',
       GROQ_FAST_MODEL: env.GROQ_FAST_MODEL || process.env.GROQ_FAST_MODEL,
       NVIDIA_API_KEY: env.NVIDIA_API_KEY || process.env.NVIDIA_API_KEY || '',
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
     const conversation = await getOrCreateConversation(env.DB, conversationId);
     // Phase 0: keep Bot records in D1 in sync with canonical definitions (no behavior change).
     await ensureBotRegistrySeeded(env.DB);
-    const managerAgent = createManagerAgent(runtimeEnv as typeof env, { provider: managerProvider });
+    const managerAgent = createManagerAgent(runtimeEnv as unknown as ManagerEnv, { provider: managerProvider });
     const managerBot = getBotDefinition('mian');
     logSafe('manager_model', {
       agent: 'Manager',

@@ -9,6 +9,7 @@ export type ActionEntry = {
   key: string;
   cls: ActionClass;
   requiresApproval: boolean;
+  note?: string;
 };
 
 const ACTION_TABLE: ActionEntry[] = [
@@ -46,3 +47,10 @@ const TABLE_INDEX = new Map<string, ActionEntry>(ACTION_TABLE.map((e) => [e.key,
 export function classify(actionKey: string): ActionEntry | undefined {
   return TABLE_INDEX.get(actionKey);
 }
+
+/**
+ * Flat lookup table for the Control Center UI — keyed by action key.
+ * Values carry requiresApproval and an optional display note.
+ */
+export const TOOL_CLASSES: Record<string, Pick<ActionEntry, 'cls' | 'requiresApproval' | 'note'>> =
+  Object.fromEntries(ACTION_TABLE.map((e) => [e.key, { cls: e.cls, requiresApproval: e.requiresApproval, note: e.note }]));

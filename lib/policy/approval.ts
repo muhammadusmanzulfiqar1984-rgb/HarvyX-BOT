@@ -18,7 +18,7 @@ export type ApprovalGate = {
  * Create a gate that allows at most `maxSends` consume() calls.
  * Pass maxSends = 1 to enforce one outbound action per turn.
  */
-export function createApprovalGate(maxSends: number): ApprovalGate {
+export function createApprovalGate(maxSends = 1): ApprovalGate {
   let used = 0;
   return {
     consume(): ApprovalDecision {

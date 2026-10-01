@@ -20,6 +20,10 @@ CLOUDFLARE_PARETO_MODEL=unbiased/pareto
 HARVYX_API_KEY=
 HARVYX_API_BASE=https://www.harvics.com
 
+# Harvics OS ERP (delegateToErp). Must equal INTERNAL_API_KEY on the harvics.com backend.
+HARVICS_API_KEY=
+HARVICS_API_BASE=https://www.harvics.com
+
 # Gmail OAuth connector (server-side only — never NEXT_PUBLIC_*)
 # Create a Google Cloud OAuth 2.0 Web Application client.
 # Local dev redirect URI: http://localhost:3000/api/connectors/gmail/callback
