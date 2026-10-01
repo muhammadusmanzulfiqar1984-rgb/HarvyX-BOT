@@ -69,6 +69,26 @@ async function callErpInsights(
     .join('\n');
 }
 
+/** GET /api/intelligence/bot/ping — lightweight connectivity check. */
+export async function checkErpConnectivity(
+  env: ErpToolEnv,
+  signal?: AbortSignal,
+): Promise<{ ok: boolean; latencyMs: number; domains: string[]; error?: string }> {
+  const start = Date.now();
+  try {
+    const res = await fetch(`${erpBase(env)}/api/intelligence/bot/ping`, {
+      headers: erpHeaders(env),
+      signal,
+    });
+    const latencyMs = Date.now() - start;
+    if (!res.ok) return { ok: false, latencyMs, domains: [], error: `HTTP ${res.status}` };
+    const data = await res.json() as { ok?: boolean; domains?: string[] };
+    return { ok: data.ok === true, latencyMs, domains: data.domains ?? [] };
+  } catch (err) {
+    return { ok: false, latencyMs: Date.now() - start, domains: [], error: String(err) };
+  }
+}
+
 export function delegateToErpTool(env: ErpToolEnv) {
   return tool({
     description:
