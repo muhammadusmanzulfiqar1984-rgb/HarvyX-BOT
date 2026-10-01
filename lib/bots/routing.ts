@@ -7,7 +7,7 @@
  * Returns null when MIAN should answer directly (no delegation needed).
  */
 
-export type DelegateSlug = 'ops' | 'analyst' | 'social' | 'scrape';
+export type DelegateSlug = 'ops' | 'analyst' | 'social' | 'scrape' | 'erp';
 
 export type RoutingResult = {
   /** Specialist to delegate to. null = MIAN answers directly. */
@@ -54,6 +54,15 @@ const SOCIAL_KEYWORDS = [
   'tweet', 'thread', 'platform', 'audience', 'influencer',
 ];
 
+const ERP_KEYWORDS = [
+  // Harvics OS modules
+  'inventory', 'stock', 'warehouse', 'purchase order', 'invoice',
+  'payroll', 'hr report', 'employee', 'logistics', 'shipment', 'freight',
+  'order', 'orders', 'finance report', 'budget', 'gl', 'general ledger',
+  'procurement', 'supplier', 'territory', 'asset', 'maintenance',
+  'harvics os', 'erp', 'module', 'band',
+];
+
 const SCRAPE_KEYWORDS = [
   'scrape', 'crawl', 'fetch', 'download', 'extract from',
   'get the content', 'read the page', 'check this url', 'check this link',
@@ -93,6 +102,7 @@ export function classifyIntent(
     { slug: 'analyst', ...score(message, ANALYST_KEYWORDS) },
     { slug: 'social',  ...score(message, SOCIAL_KEYWORDS) },
     { slug: 'scrape',  ...score(message, SCRAPE_KEYWORDS) },
+    { slug: 'erp',     ...score(message, ERP_KEYWORDS) },
   ].map((c) => ({ slug: c.slug, score: c.score, keywords: (c as any).matched }));
 
   candidates.sort((a, b) => b.score - a.score);
@@ -108,7 +118,7 @@ export function classifyIntent(
 
   // Tie-break: if two candidates are within 1 point, prefer by priority
   // ops > analyst > social > scrape (ops is the most common action in HARVYX)
-  const PRIORITY: DelegateSlug[] = ['ops', 'analyst', 'social', 'scrape'];
+  const PRIORITY: DelegateSlug[] = ['ops', 'erp', 'analyst', 'social', 'scrape'];
   const tied = candidates.filter((c) => c.score === top.score);
   const winner = tied.sort(
     (a, b) => PRIORITY.indexOf(a.slug) - PRIORITY.indexOf(b.slug),

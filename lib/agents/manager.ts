@@ -15,11 +15,12 @@ import { delegateToScrapeTool } from '../tools/delegate-to-scrape';
 import { delegateToGmailTool, type GmailToolEnv } from '../tools/delegate-to-gmail';
 import { delegateToHarvyxSendTool } from '../tools/delegate-to-harvyx-send';
 import { delegateToCalendarTool, type CalendarToolEnv } from '../tools/delegate-to-calendar';
+import { delegateToErpTool, type ErpToolEnv } from '../tools/delegate-to-erp';
 import type { OpsAgentEnv } from './ops-agent';
 import type { SmartModelEnv } from '../models/smart';
 import { createApprovalGate } from '../policy/approval';
 
-export type ManagerEnv = OpsAgentEnv & SmartModelEnv & GmailToolEnv & CalendarToolEnv;
+export type ManagerEnv = OpsAgentEnv & SmartModelEnv & GmailToolEnv & CalendarToolEnv & ErpToolEnv;
 
 /** @deprecated Prefer getBotDefinition('mian').instructions — kept for import stability. */
 export const MIAN_INSTRUCTIONS = getBotDefinition('mian').instructions;
@@ -101,6 +102,7 @@ export function createManagerAgent(env: ManagerEnv, options: ManagerOptions = {}
     delegateToAnalyst: delegateToAnalystTool(env),
     delegateToSocial: delegateToSocialTool(env),
     delegateToScrape: delegateToScrapeTool(env),
+    delegateToErp: delegateToErpTool(env),
     gmail: delegateToGmailTool(env, sendGate),
     harvyxSend: delegateToHarvyxSendTool(env, sendGate),
     calendar: delegateToCalendarTool(env, sendGate),

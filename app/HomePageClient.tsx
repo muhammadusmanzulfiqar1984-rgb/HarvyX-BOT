@@ -1,7 +1,7 @@
 'use client';
 
 import { parseJson } from '@/lib/client-api';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Sidebar, type ConversationSummary } from '@/components/Sidebar';
 import { TopBar } from '@/components/TopBar';
@@ -74,10 +74,18 @@ export default function HomePageClient() {
   const [chatBusy, setChatBusy] = useState(false);
   const [rosterStates, setRosterStates] = useState<Partial<Record<string, AgentUxState>>>({});
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // true once we have confirmed D1 API is reachable this session
+  const apiAvailable = useRef(false);
 
-  const persist = useCallback((list: ConversationSummary[]) => {
+  const persist = useCallback((list: ConversationSummary[], fromApi = false) => {
     setConversations(list);
-    saveLocalConversations(list);
+    if (fromApi) {
+      apiAvailable.current = true;
+    }
+    // Only write to localStorage when the API is unavailable (offline fallback)
+    if (!apiAvailable.current) {
+      saveLocalConversations(list);
+    }
   }, []);
 
   useEffect(() => {
@@ -91,10 +99,12 @@ export default function HomePageClient() {
             ? data.conversations.map(normalizeConversation)
             : [];
           if (!cancelled && list.length > 0) {
-            persist(list);
+            persist(list, true);
             setActiveId(list[0].id);
             return;
           }
+          // API responded but empty — still mark available so we don't fall back to local
+          if (!cancelled) apiAvailable.current = true;
         }
       } catch {
         /* fall through to local */
@@ -163,6 +173,7 @@ export default function HomePageClient() {
         if (data?.conversation?.id) {
           id = data.conversation.id;
           title = data.conversation.title || title;
+          apiAvailable.current = true;
         }
       }
     } catch {
