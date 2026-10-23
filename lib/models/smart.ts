@@ -1,7 +1,8 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import { isParetoProvider, paretoModel, type ParetoModelEnv } from './pareto';
+import { isLocalH100Provider, localH100Model, type LocalH100Env } from './local-h100';
 
-export interface SmartModelEnv {
+export interface SmartModelEnv extends LocalH100Env {
   SMART_PROVIDER?: string;
   NVIDIA_API_KEY: string;
   NVIDIA_SMART_MODEL?: string;
@@ -24,6 +25,10 @@ const NVIDIA_NIM_BASE_URL = 'https://integrate.api.nvidia.com/v1';
 export function smartModel(env: SmartModelEnv) {
   if (isParetoProvider(env.SMART_PROVIDER)) {
     return paretoModel(env as ParetoModelEnv);
+  }
+
+  if (isLocalH100Provider(env.SMART_PROVIDER)) {
+    return localH100Model(env);
   }
 
   if (env.SMART_PROVIDER === 'nebius') {

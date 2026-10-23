@@ -1,6 +1,6 @@
 import { ToolLoopAgent } from 'ai';
-import { resolveModel } from '../models/router';
 import { getBotDefinition } from '../bots';
+import { resolveBotModel, requireRunnableBot, selectBotTools } from '../bots/runtime';
 import { harvyxTools, type HarvyxEnv } from '../tools/harvyx';
 
 export interface OpsAgentEnv extends HarvyxEnv {
@@ -10,10 +10,17 @@ export interface OpsAgentEnv extends HarvyxEnv {
 
 /** Reads and writes HarvyX lead/campaign data via the REST API connector. */
 export function createOpsAgent(env: OpsAgentEnv) {
-  const bot = getBotDefinition('ops');
+  const bot = requireRunnableBot('ops');
+  const pack = harvyxTools(env);
+  const tools = selectBotTools(bot, pack) as typeof pack;
   return new ToolLoopAgent({
-    model: resolveModel(bot.modelTier === 'code' ? 'fast' : bot.modelTier, env),
+    model: resolveBotModel(bot, env),
     instructions: bot.instructions,
-    tools: harvyxTools(env),
+    tools,
   });
+}
+
+/** @deprecated Prefer getBotDefinition('ops') — retained for callers that only need instructions. */
+export function getOpsInstructions(): string {
+  return getBotDefinition('ops').instructions;
 }

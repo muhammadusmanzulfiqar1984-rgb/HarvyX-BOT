@@ -13,6 +13,11 @@ export type ErrorCategory =
 
 export type SafeLogFields = {
   agent?: string;
+  /** Canonical bot slug (e.g. mian, ops). */
+  bot?: string;
+  /** Living-particle agent id when relevant. */
+  particle?: string;
+  modelTier?: string;
   operation?: string;
   provider?: string;
   category?: ErrorCategory;

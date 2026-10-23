@@ -1,37 +1,26 @@
-import type { NavSection } from '../nav';
+import type { WorkspaceSection } from '../nav';
+import { ManagerCoreIcon } from '../AgentTotems';
 
-export function HomeView({ onNavigate }: { onNavigate: (section: NavSection) => void }) {
+export function HomeView({ onNavigate }: { onNavigate: (section: WorkspaceSection) => void }) {
   return (
-    <div className="view-shell">
-      <div className="home-hero">
-        <div className="home-hero-eyebrow">HARVYX BOT</div>
-        <h1>Your AI operating system, online.</h1>
-        <p>MIAN orchestrates OPS and Analyst from the Bot Registry. Open a workspace or start a new conversation.</p>
-        <div className="home-hero-actions">
+    <div className="view-shell home-shell">
+      <div className="home-command">
+        <ManagerCoreIcon state="idle" size="lg" className="home-command-core" />
+        <p className="home-command-kicker">AI operating command system</p>
+        <h1 className="home-command-title">HARVYX BOT</h1>
+        <p className="home-command-line">
+          Commerce · CRM · GTM · research · outreach · executive work
+        </p>
+        <p className="home-command-sub">
+          Manager routes OPS, Analyst, Scrape, and Social. Real tools. Approval-gated sends.
+        </p>
+        <div className="home-command-actions">
           <button className="btn-primary" onClick={() => onNavigate('chat')}>
-            Open Chat
+            Enter command
           </button>
-          <button className="btn-secondary" onClick={() => onNavigate('agents')}>
-            View Agents
+          <button className="btn-ghost" onClick={() => onNavigate('agents')}>
+            Agent roster
           </button>
-        </div>
-      </div>
-
-      <div className="home-grid">
-        <div className="card">
-          <div className="card-eyebrow">Manager</div>
-          <h3>HarvYX Bot</h3>
-          <p>Answers directly or delegates to OPS / Analyst based on the request.</p>
-        </div>
-        <div className="card">
-          <div className="card-eyebrow">Agent</div>
-          <h3>OPS</h3>
-          <p>Handles HarvYX leads, campaigns, and pipeline operations.</p>
-        </div>
-        <div className="card">
-          <div className="card-eyebrow">Agent</div>
-          <h3>Analyst</h3>
-          <p>Deep reasoning, drafting, and research synthesis.</p>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import {
   specialistFail,
   specialistOk,
 } from '../agents/specialist-result';
-import { logSafe } from '../observability';
+import { requireRunnableBot, logBotExecution } from '../bots/runtime';
 
 export function delegateToScrapeTool(env: ScrapeAgentEnv) {
   return tool({
@@ -19,17 +19,25 @@ export function delegateToScrapeTool(env: ScrapeAgentEnv) {
     }),
     execute: async ({ task }, { abortSignal }) => {
       const started = Date.now();
+      const bot = requireRunnableBot('scrape');
+      logBotExecution('bot_execute_start', bot, { operation: 'delegate', provider: 'groq' });
       try {
         const scrapeAgent = createScrapeAgent(env);
         const result = await scrapeAgent.generate({ prompt: task, abortSignal });
-        logSafe('specialist_ok', {
-          agent: 'Scrape',
+        logBotExecution('bot_execute_ok', bot, {
           operation: 'generate',
           provider: 'groq',
           elapsedMs: Date.now() - started,
         });
         return formatSpecialistResult(specialistOk('Scrape', result.text));
       } catch (err) {
+        logBotExecution('bot_execute_fail', bot, {
+          operation: 'generate',
+          provider: 'groq',
+          elapsedMs: Date.now() - started,
+          category: 'provider',
+          message: err instanceof Error ? err.message : 'unknown',
+        });
         return formatSpecialistResult(specialistFail('Scrape', err, 'generate', 'groq'));
       }
     },
